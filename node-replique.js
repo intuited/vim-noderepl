@@ -34,10 +34,11 @@ net.createServer(function (stream) {
  * of prototypes derived from using `Object.create`.
  */
 function derive(base, additions) {
-  derived = Object.create(base);
+  var derived = Object.create(base);
   for (attr in additions) {
     derived[attr] = additions[attr];
   }
+  return derived;
 }
 
 /**
@@ -45,7 +46,7 @@ function derive(base, additions) {
  */
 function bind(obj, method) {
   return function () {
-    method.apply(obj, arguments);
+    return method.apply(obj, arguments);
   }
 }
 
@@ -79,10 +80,12 @@ Contexts.prototype = {
      * Based on repl.js's `resetContext` function.
      */
     function () {
-      newContext = Script.createContext();
-      for (var i in global) context[i] = global[i];
-      context.module = module;
-      context.require = require;
+      var newContext = Script.createContext();
+      for (var i in global) newContext[i] = global[i];
+        //??  Not sure if this is appropriate.
+      newContext.module = module;
+      newContext.require = require;
+      return newContext;
     },
 
   get:
@@ -91,14 +94,14 @@ Contexts.prototype = {
      */
     function (name) {
       var name = name || "default";
-      if (!this.contexts[context_name]) {
-        this.contexts[context_name] = createContext();
+      if (!this.contexts[name]) {
+        this.contexts[name] = this.createContext();
       } else if (!this.contexts.hasOwnProperty(name)) {
         // Ensure that this isn't a builtin method of Object
         throw NameError("Context name " + name
                         + " conflicts with Object builtin.");
       }
-      return this.contexts[context_name];
+      return this.contexts[name];
     },
 }
 contexts = new Contexts()
@@ -112,7 +115,7 @@ contexts = new Contexts()
 /**
  * Requests should be made in JSON format.
  * The top-level object contains
- * -   command: "eval" or "complete"
+ * -   command: "evaluate" or "complete"
  * -   context (optional): name of the evaluation context.  Created on demand.
  * -   code: the string to be evaled or completed.
  */
@@ -146,7 +149,7 @@ Writer.prototype = {
       this.stream.write(this.stringify(value));
     },
 
-  _stringify: JSON.stringify
+  _stringify: JSON.stringify,
 
   formatValue:
     /**
@@ -218,6 +221,8 @@ writers = {
  * A method of `routes` is called to process the result or error state.
  */
 function evaluate(context, routes, expression) {
+  var value, error;
+
   try {
     value = Script.runInContext(context, expression);
   } catch (error) {
@@ -244,7 +249,7 @@ function complete(context, write, expression) {
   // I *think* it just gets ignored,
   // but since the repl module just serves one context for all repls
   // it could be getting used as a context identifier in a problematic way.
-  fake_repl = {
+  var fake_repl = {
     commands: {},
     context: context
   };
