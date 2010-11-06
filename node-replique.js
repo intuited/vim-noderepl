@@ -8,12 +8,16 @@ net.createServer(function (stream) {
   // then attempt to evaluate it.
   var request = '';
 
+  stream.write("Testing stream writing before setting up listeners.\n");  //~~
+
   stream.setEncoding('utf8');
 
   stream.on('data', function (chunk) {
+    stream.write("Testing stream writing in `data` listener.\n");  //~~
     request += chunk;
   });
   stream.on('end', function () {
+    stream.write("Testing stream writing in `end` listener.\n");  //~~
     reply(request, stream);
     stream.end();
   });
@@ -121,12 +125,14 @@ contexts = new Contexts()
  */
 function reply(request, stream) {
   var inspect = require('util').inspect;
-  console.log(inspect(['request', request]));
+  console.log(inspect(['request', request]));  //~~
   request = JSON.parse(request);
-  console.log(inspect(['parsed request', request]));
+  console.log(inspect(['parsed request', request]));  //~~
   command = request.command;
   return ['evaluate', 'complete'].indexOf(command) > -1
-    ? handlers[command](contexts, writers[command], request)
+    ? handlers[command](contexts,
+                        new writers[command](stream),
+                        request)
     : invalidRequest(request, stream);
 }
 
@@ -141,15 +147,17 @@ function reply(request, stream) {
  * How can I arrange for the constructor to be included in the derivation?
  */
 function Writer(stream) {
+  stream.write('testing in Writer\n') //~~
   this.stream = stream;
 }
 Writer.prototype = {
   writeString:
     function (value) {
+      console.log('Writer.writeString called.  stream: ' + this.stream);  //~~
       this.stream.write(this.stringify(value));
     },
 
-  _stringify: JSON.stringify,
+  stringify: JSON.stringify,
 
   formatValue:
     /**
@@ -173,6 +181,7 @@ function EvalRouter(stream) {
 EvalRouter.prototype = derive(Writer.prototype, {
   success:
     function (value) {
+      console.log('routes.success called.');  //~~
       return this.writeString({
         value: this.formatValue(value)
       });
@@ -223,8 +232,11 @@ writers = {
 function evaluate(context, routes, expression) {
   var value, error;
 
+  console.log('evaluate called.');  //~~
   try {
-    value = Script.runInContext(context, expression);
+    console.log('calling runInContext...');  //~~
+    value = Script.runInContext(expression, context);
+    console.log('...runInContext returned value: ' + value);  //~~
   } catch (error) {
     // repl.js says "instanceof doesn't work across context switches."
     if (error && error.constructor
@@ -268,6 +280,7 @@ processors = {
  */
 
 function evalRequest(contexts, routes, request) {
+  console.log('evalRequest called.');  //~~
   return evaluate(contexts.get(request.context),
                   routes, request.code);
 }
