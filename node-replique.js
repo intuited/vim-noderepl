@@ -12,10 +12,7 @@ net.createServer(function (stream) {
 
   stream.setEncoding('utf8');
 
-  stream.write("Testing stream writing.\n");  //~~
-
   stream.on('data', function (chunk) {
-    stream.write("Testing stream writing in `data` listener.\n");  //~~
     request += chunk;
     try {
       request = JSON.parse(request);
@@ -35,8 +32,8 @@ net.createServer(function (stream) {
       request = '';
     }
   });
+
   stream.on('end', function () {
-    stream.write("Testing stream writing in `end` listener.\n");  //~~
     stream.end();
   });
 }).listen(4994);
