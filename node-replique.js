@@ -1,24 +1,42 @@
 // Snappy responses to requests for completion and evaluation.
+// TODO:
+//  -   Context name should be included with responses.
 var net = require('net');
 var util = require('util');
 var Script = process.binding('evals').Script;
 
 net.createServer(function (stream) {
-  // Accumulate code until the end of input,
+  // Accumulate code until a valid JSON string arrives,
   // then attempt to evaluate it.
   var request = '';
 
-  stream.write("Testing stream writing before setting up listeners.\n");  //~~
-
   stream.setEncoding('utf8');
+
+  stream.write("Testing stream writing.\n");  //~~
 
   stream.on('data', function (chunk) {
     stream.write("Testing stream writing in `data` listener.\n");  //~~
     request += chunk;
+    try {
+      request = JSON.parse(request);
+    } catch (e) {
+      // This means the JSON was incorrectly formed, presumably incomplete.
+      // We go back to waiting for another chunk.
+      // TODO: check if there are any errors possible here
+      //       which do not indicate incomplete JSON.
+      console.log(util.inspect(['partial request', request]));  //~~
+      return;
+    }
+    try {
+      // TODO: go through and actually make sure that exceptions
+      //       can't bubble up here.
+      reply(request, stream);
+    } finally {
+      request = '';
+    }
   });
   stream.on('end', function () {
     stream.write("Testing stream writing in `end` listener.\n");  //~~
-    reply(request, stream);
     stream.end();
   });
 }).listen(4994);
@@ -29,40 +47,40 @@ net.createServer(function (stream) {
  * ^^^^^^^^^^^^^^^^^
  */
 
-/**
- * Add all attributes from `additions` to an instantiation of `base`.
- * Am I missing something?  Is there a standard way to do this?
- *
- * I should also solve the mystery of why the repl complete routine
- * is written in such a way that it doesn't complete attributes
- * of prototypes derived from using `Object.create`.
- */
-function derive(base, additions) {
-  var derived = Object.create(base);
-  for (attr in additions) {
-    derived[attr] = additions[attr];
+  /**
+   * Add all attributes from `additions` to an instantiation of `base`.
+   * Am I missing something?  Is there a standard way to do this?
+   *
+   * I should also solve the mystery of why the repl complete routine
+   * is written in such a way that it doesn't complete attributes
+   * of prototypes derived from using `Object.create`.
+   */
+  function derive(base, additions) {
+    var derived = Object.create(base);
+    for (attr in additions) {
+      derived[attr] = additions[attr];
+    }
+    return derived;
   }
-  return derived;
-}
 
-/**
- * Another one that should probably be acquired from a library.
- */
-function bind(obj, method) {
-  return function () {
-    return method.apply(obj, arguments);
+  /**
+   * Another one that should probably be acquired from a library.
+   */
+  function bind(obj, method) {
+    return function () {
+      return method.apply(obj, arguments);
+    }
   }
-}
 
 
-/**
- * What happens when the object-as-dictionary abstraction leaks.
- */
-function NameError(message) {
-  this.name = "NameError";
-  this.message = message;
-}
-NameError.prototype = derive(Error.prototype);
+  /**
+   * What happens when the object-as-dictionary abstraction leaks.
+   */
+  function NameError(message) {
+    this.name = "NameError";
+    this.message = message;
+  }
+  NameError.prototype = derive(Error.prototype);
 
 
 /**
@@ -70,45 +88,45 @@ NameError.prototype = derive(Error.prototype);
  * ^^^^^^^^
  */
 
-/**
- * Holds the string-indexed set of evaluation contexts.
- * Can be initialized with an object.
- */
-function Contexts(contexts) {
-  this.contexts = contexts || {};
-}
-Contexts.prototype = {
-  createContext:
-    /**
-     * Initialize a new context.
-     * Based on repl.js's `resetContext` function.
-     */
-    function () {
-      var newContext = Script.createContext();
-      for (var i in global) newContext[i] = global[i];
-        //??  Not sure if this is appropriate.
-      newContext.module = module;
-      newContext.require = require;
-      return newContext;
-    },
+  /**
+   * Holds the string-indexed set of evaluation contexts.
+   * Can be initialized with an object.
+   */
+  function Contexts(contexts) {
+    this.contexts = contexts || {};
+  }
+  Contexts.prototype = {
+    createContext:
+      /**
+       * Initialize a new context.
+       * Based on repl.js's `resetContext` function.
+       */
+      function () {
+        var newContext = Script.createContext();
+        for (var i in global) newContext[i] = global[i];
+          //??  Not sure if this is appropriate.
+        newContext.module = module;
+        newContext.require = require;
+        return newContext;
+      },
 
-  get:
-    /**
-     * Make sure there's a valid name and a context for that name.
-     */
-    function (name) {
-      var name = name || "default";
-      if (!this.contexts[name]) {
-        this.contexts[name] = this.createContext();
-      } else if (!this.contexts.hasOwnProperty(name)) {
-        // Ensure that this isn't a builtin method of Object
-        throw NameError("Context name " + name
-                        + " conflicts with Object builtin.");
-      }
-      return this.contexts[name];
-    },
-}
-contexts = new Contexts()
+    get:
+      /**
+       * Make sure there's a valid name and a context for that name.
+       */
+      function (name) {
+        var name = name || "default";
+        if (!this.contexts[name]) {
+          this.contexts[name] = this.createContext();
+        } else if (!this.contexts.hasOwnProperty(name)) {
+          // Ensure that this isn't a builtin method of Object
+          throw NameError("Context name " + name
+                          + " conflicts with Object builtin.");
+        }
+        return this.contexts[name];
+      },
+  }
+  contexts = new Contexts()
 
 
 /**
@@ -117,17 +135,14 @@ contexts = new Contexts()
  */
 
 /**
- * Requests should be made in JSON format.
+ * Replies to a parsed request.
  * The top-level object contains
  * -   command: "evaluate" or "complete"
  * -   context (optional): name of the evaluation context.  Created on demand.
  * -   code: the string to be evaled or completed.
  */
 function reply(request, stream) {
-  var inspect = require('util').inspect;
-  console.log(inspect(['request', request]));  //~~
-  request = JSON.parse(request);
-  console.log(inspect(['parsed request', request]));  //~~
+  console.log(util.inspect(['parsed request', request]));  //~~
   command = request.command;
   return ['evaluate', 'complete'].indexOf(command) > -1
     ? handlers[command](contexts,
@@ -195,11 +210,10 @@ EvalRouter.prototype = derive(Writer.prototype, {
   error:
     function (error) {
       // On error: Print the error and clear the buffer
-      if (error.stack) {
-        return this.stream.write(this.formatMessage(error.stack));
-      } else {
-        return this.stream.write(this.formatMessage(error.toString()));
-      }
+      var content = error.stack || error.toString();
+      return this.writeString({
+        error: this.formatMessage(error.stack)
+      });
     },
 });
 
