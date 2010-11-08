@@ -39,7 +39,7 @@ class _Replique(object):
     def __repr__(self):
         return "{0}({1})".format(self.__class__.__name__, self.replique)
     def __str__(self):
-        return self.replique[self.result]
+        return str(self.replique[self.result])
 
 class Value(_Replique):
     result = u'value'

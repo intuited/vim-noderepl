@@ -7,6 +7,7 @@
 var net = require('net');
 var util = require('util');
 var Script = process.binding('evals').Script;
+var repl = require('repl');
 
 net.createServer(function (stream) {
   // Accumulate code until a valid JSON string arrives,
@@ -41,7 +42,7 @@ net.createServer(function (stream) {
   });
 }).listen(4994);
 
-  
+
 /**
  * Utility functions
  * ^^^^^^^^^^^^^^^^^
@@ -220,7 +221,7 @@ EvalRouter.prototype = derive(Writer.prototype, {
 function CompletionWriter(stream) {
   this.stream = stream;
 }
-CompletionWriter.prototype = derive(Writer, {
+CompletionWriter.prototype = derive(Writer.prototype, {
   write:
     function (completions) {
       this.writeString({ completions: completions[0],
@@ -232,7 +233,7 @@ writers = {
   evaluate: EvalRouter,
   complete: CompletionWriter
 };
-    
+
 
 /**
  * Processors
@@ -267,7 +268,7 @@ function evaluate(context, routes, expression) {
 /**
  * Complete the `expression` and `write` the result.
  */
-function complete(context, write, expression) {
+function complete(context, writer, expression) {
   // Here I'm slightly worried because I don't understand why
   // repl.REPLServer.prototype.complete passes "repl"
   // as a third parameter to Script.runInContext.
@@ -279,7 +280,9 @@ function complete(context, write, expression) {
     commands: {},
     context: context
   };
-  write(repl.REPLServer.prototype.complete.call(fake_repl, expression));
+  writer.write(
+    repl.REPLServer.prototype.complete.call(fake_repl, expression)
+  );
 }
 
 processors = {
@@ -299,9 +302,9 @@ function evalRequest(contexts, routes, request) {
                   routes, request.code);
 }
 
-function completeRequest(contexts, write, request) {
+function completeRequest(contexts, writer, request) {
   return complete(contexts.get(request.context),
-                  write, request.code);
+                  writer, request.code);
 }
 
 handlers = {
