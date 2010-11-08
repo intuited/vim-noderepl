@@ -7,13 +7,14 @@ import logging
 post_log = logging.getLogger('post')
 
 class Poste(object):
+    attribs = ['command', 'code', 'context']
     def __init__(self, code, context=None):
         self.code = code
         if context:
             self.context = context
     def __str__(self):
-        attribs = ('command', 'code', 'context')
-        attribs = ((a, getattr(self, a, None)) for a in attribs)
+        """The stringification can be sent directly to the server."""
+        attribs = ((a, getattr(self, a, None)) for a in self.attribs)
         attribs = dict(kv for kv in attribs if kv[1] is not None)
         return json.dumps(attribs)
 
@@ -75,3 +76,29 @@ def post(poste, host='localhost', port=4994, timeout=2):
                              .format(e))
         else:
             return Replique(replique)
+
+
+def main():
+    import argparse
+    parser = argparse.ArgumentParser(description="Communicate with a replique server.")
+    parser.add_argument('-s', '--server', default='localhost')
+    parser.add_argument('-p', '--port', type=int, default=4994)
+    parser.add_argument('-c', '--context', default=None,
+        help="Name of the context in which to execute this command.  "
+             "A new one will be created if necessary.")
+    parser.add_argument('-t', '--timeout', default=2,
+        help="Timeout when waiting for a response from the server.  "
+             "Normally this won't need to be changed.")
+    parser.add_argument('command', choices=['evaluate', 'complete'],
+        help="The command to be executed on the remote server.")
+    parser.add_argument('code',
+        help="The code to execute the command on.")
+    options = parser.parse_args()
+
+    PostType = {'evaluate': Evaluate, 'complete': Complete}[options.command]
+    poste = PostType(options.code, context=options.context)
+    print post(poste, host=options.server, port=options.port)
+
+
+if __name__ == '__main__':
+    main()
