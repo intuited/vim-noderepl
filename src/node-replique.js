@@ -135,22 +135,22 @@ net.createServer(function (stream) {
  * ^^^^^^^^^^^^^^^^^^^^^^^^^^
  */
 
-/**
- * Replies to a parsed request.
- * The top-level object contains
- * -   command: "evaluate" or "complete"
- * -   context (optional): name of the evaluation context.  Created on demand.
- * -   code: the string to be evaled or completed.
- */
-function reply(request, stream) {
-  console.log(util.inspect(['parsed request', request]));  //~~
-  command = request.command;
-  return ['evaluate', 'complete'].indexOf(command) > -1
-    ? handlers[command](contexts,
-                        new writers[command](stream),
-                        request)
-    : invalidRequest(request, stream);
-}
+  /**
+   * Replies to a parsed request.
+   * The top-level object contains
+   * -   command: "evaluate" or "complete"
+   * -   context (optional): name of the evaluation context.  Created on demand.
+   * -   code: the string to be evaled or completed.
+   */
+  function reply(request, stream) {
+    console.log(util.inspect(['parsed request', request]));  //~~
+    command = request.command;
+    return ['evaluate', 'complete'].indexOf(command) > -1
+      ? handlers[command](contexts,
+                          new writers[command](stream),
+                          request)
+      : invalidRequest(request, stream);
+  }
 
 
 /**
@@ -158,81 +158,81 @@ function reply(request, stream) {
  * ^^^^^^^^^^^^^^^^^
  */
 
-/**
- * Base prototype for writing responses to streams.
- * How can I arrange for the constructor to be included in the derivation?
- */
-function Writer(stream) {
-  stream.write('testing in Writer\n') //~~
-  this.stream = stream;
-}
-Writer.prototype = {
-  writeString:
-    function (value) {
-      console.log('Writer.writeString called.  stream: ' + this.stream);  //~~
-      this.stream.write(this.stringify(value));
-    },
+  /**
+   * Base prototype for writing responses to streams.
+   * How can I arrange for the constructor to be included in the derivation?
+   */
+  function Writer(stream) {
+    stream.write('testing in Writer\n') //~~
+    this.stream = stream;
+  }
+  Writer.prototype = {
+    writeString:
+      function (value) {
+        console.log('Writer.writeString called.  stream: ' + this.stream);  //~~
+        this.stream.write(this.stringify(value));
+      },
 
-  stringify: JSON.stringify,
+    stringify: JSON.stringify,
 
-  formatValue:
-    /**
-     * The default value formatter.
-     */
-    function (value) { return util.inspect(value) + "\n"; },
+    formatValue:
+      /**
+       * The default value formatter.
+       */
+      function (value) { return util.inspect(value) + "\n"; },
 
-  formatMessage:
-    /**
-     * The default formatter of error messages.
-     */
-    function (message) { return message + "\n"; },
-}
+    formatMessage:
+      /**
+       * The default formatter of error messages.
+       */
+      function (message) { return message + "\n"; },
+  }
 
-/**
- * Implements the protocol for responses to eval requests.
- */
-function EvalRouter(stream) {
-  this.stream = stream;
-}
-EvalRouter.prototype = derive(Writer.prototype, {
-  success:
-    function (value) {
-      console.log('routes.success called.');  //~~
-      return this.writeString({
-        value: this.formatValue(value)
-      });
-    },
-  syntaxError:  // (Usually?) indicates an incomplete expression.
-    function (error) {
-      return this.writeString({
-        syntaxError: this.formatMessage(error)
-      });
-    },
-  error:
-    function (error) {
-      // On error: Print the error and clear the buffer
-      var content = error.stack || error.toString();
-      return this.writeString({
-        error: this.formatMessage(error.stack)
-      });
-    },
-});
+  /**
+   * Implements the protocol for responses to eval requests.
+   */
+  function EvalRouter(stream) {
+    this.stream = stream;
+  }
+  EvalRouter.prototype = derive(Writer.prototype, {
+    success:
+      function (value) {
+        console.log('routes.success called.');  //~~
+        return this.writeString({
+          value: this.formatValue(value)
+        });
+      },
+    syntaxError:  // (Usually?) indicates an incomplete expression.
+      function (error) {
+        return this.writeString({
+          syntaxError: this.formatMessage(error)
+        });
+      },
+    error:
+      function (error) {
+        // On error: Print the error and clear the buffer
+        var content = error.stack || error.toString();
+        return this.writeString({
+          error: this.formatMessage(error.stack)
+        });
+      },
+  });
 
-function CompletionWriter(stream) {
-  this.stream = stream;
-}
-CompletionWriter.prototype = derive(Writer.prototype, {
-  write:
-    function (completions) {
-      this.writeString({ completions: completions[0],
-                         completed: completions[1] });
-    }
-});
+  function CompletionWriter(stream) {
+    this.stream = stream;
+  }
+  CompletionWriter.prototype = derive(Writer.prototype, {
+    write:
+      function (completions) {
+        this.writeString({ completions: completions[0],
+                           completed: completions[1] });
+      }
+  });
 
-writers = {
-  evaluate: EvalRouter,
-  complete: CompletionWriter
-};
+  writers = {
+    evaluate: EvalRouter,
+    complete: CompletionWriter
+  };
 
 
 /**
@@ -240,55 +240,55 @@ writers = {
  * ^^^^^^^^^^
  */
 
-/**
- * Evaluate the request in the appropriate context.
- * A method of `routes` is called to process the result or error state.
- */
-function evaluate(context, routes, expression) {
-  var value, error;
+  /**
+   * Evaluate the request in the appropriate context.
+   * A method of `routes` is called to process the result or error state.
+   */
+  function evaluate(context, routes, expression) {
+    var value, error;
 
-  console.log('evaluate called.');  //~~
-  try {
-    console.log('calling runInContext...');  //~~
-    value = Script.runInContext(expression, context);
-    console.log('...runInContext returned value: ' + value);  //~~
-  } catch (error) {
-    // repl.js says "instanceof doesn't work across context switches."
-    if (error && error.constructor
-              && error.constructor.name === "SyntaxError")
-    {
-      return routes.syntaxError(error);
-    } else {
-      return routes.error(error);
+    console.log('evaluate called.');  //~~
+    try {
+      console.log('calling runInContext...');  //~~
+      value = Script.runInContext(expression, context);
+      console.log('...runInContext returned value: ' + value);  //~~
+    } catch (error) {
+      // repl.js says "instanceof doesn't work across context switches."
+      if (error && error.constructor
+                && error.constructor.name === "SyntaxError")
+      {
+        return routes.syntaxError(error);
+      } else {
+        return routes.error(error);
+      }
     }
+    return routes.success(value);
   }
-  return routes.success(value);
-}
 
-/**
- * Complete the `expression` and `write` the result.
- */
-function complete(context, writer, expression) {
-  // Here I'm slightly worried because I don't understand why
-  // repl.REPLServer.prototype.complete passes "repl"
-  // as a third parameter to Script.runInContext.
-  //
-  // I *think* it just gets ignored,
-  // but since the repl module just serves one context for all repls
-  // it could be getting used as a context identifier in a problematic way.
-  var fake_repl = {
-    commands: {},
-    context: context
+  /**
+   * Complete the `expression` and `write` the result.
+   */
+  function complete(context, writer, expression) {
+    // Here I'm slightly worried because I don't understand why
+    // repl.REPLServer.prototype.complete passes "repl"
+    // as a third parameter to Script.runInContext.
+    //
+    // I *think* it just gets ignored,
+    // but since the repl module just serves one context for all repls
+    // it could be getting used as a context identifier in a problematic way.
+    var fake_repl = {
+      commands: {},
+      context: context
+    };
+    writer.write(
+      repl.REPLServer.prototype.complete.call(fake_repl, expression)
+    );
+  }
+
+  processors = {
+    evaluate: evaluate,
+    complete: complete
   };
-  writer.write(
-    repl.REPLServer.prototype.complete.call(fake_repl, expression)
-  );
-}
-
-processors = {
-  evaluate: evaluate,
-  complete: complete
-};
 
 
 /**
@@ -296,18 +296,18 @@ processors = {
  * ^^^^^^^^
  */
 
-function evalRequest(contexts, routes, request) {
-  console.log('evalRequest called.');  //~~
-  return evaluate(contexts.get(request.context),
-                  routes, request.code);
-}
+  function evalRequest(contexts, routes, request) {
+    console.log('evalRequest called.');  //~~
+    return evaluate(contexts.get(request.context),
+                    routes, request.code);
+  }
 
-function completeRequest(contexts, writer, request) {
-  return complete(contexts.get(request.context),
-                  writer, request.code);
-}
+  function completeRequest(contexts, writer, request) {
+    return complete(contexts.get(request.context),
+                    writer, request.code);
+  }
 
-handlers = {
-  evaluate: evalRequest,
-  complete: completeRequest
-};
+  handlers = {
+    evaluate: evalRequest,
+    complete: completeRequest
+  };
