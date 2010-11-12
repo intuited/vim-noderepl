@@ -446,6 +446,9 @@ set cpo&vim
     let vimclojure#Repl._historyDepth = 0
     let vimclojure#Repl._replCommands = [ ",close", ",st", ",ct" ]
 
+    " Creates a repl in a new buffer.
+    " The new dictionary instance is stored in `b:vimclojure_repl`.
+    " This function is called by the StartRepl plugin that's mapped to \sr.
     function! vimclojure#Repl.New() dict
         let instance = copy(self)
 
