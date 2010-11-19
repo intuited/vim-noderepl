@@ -66,3 +66,70 @@ endfunct
     funct! noderepl#Repl._InitializeRepl()
         " TODO: See if anything needs to go here.
     endfunct
+
+
+" Callback functions to interface with the interpreter
+
+    function! noderepl#Repl.enterHook() dict
+        let cmd = self.getCommand()
+
+        " Special Case: Showed prompt (or user just hit enter).
+        if cmd == ""
+            return
+        endif
+
+        if self.isReplCommand(cmd)
+            call self.doReplCommand(cmd)
+            return
+        endif
+
+        let result = vimclojure#ExecuteNailWithInput("CheckSyntax", cmd)
+        if result == "false"
+            execute "normal! GA\<CR>x"
+            normal! ==x
+            startinsert!
+        else
+            let result = vimclojure#ExecuteNailWithInput("Repl", cmd,
+                        \ "-r", "-i", self._id)
+            call self.showText(result)
+
+            let self._historyDepth = 0
+            let self._history = [cmd] + self._history
+            call self.showPrompt()
+        endif
+    endfunction
+
+    function! vimclojure#Repl.upHistory() dict
+        let histLen = len(self._history)
+        let histDepth = self._historyDepth
+
+        if histLen > 0 && histLen > histDepth
+            let cmd = self._history[histDepth]
+            let self._historyDepth = histDepth + 1
+
+            call self.deleteLast()
+
+            call self.showText(self._prompt . " " . cmd)
+        endif
+
+        normal! G$
+    endfunction
+
+    function! vimclojure#Repl.downHistory() dict
+        let histLen = len(self._history)
+        let histDepth = self._historyDepth
+
+        if histDepth > 0 && histLen > 0
+            let self._historyDepth = histDepth - 1
+            let cmd = self._history[self._historyDepth]
+
+            call self.deleteLast()
+
+            call self.showText(self._prompt . " " . cmd)
+        elseif histDepth == 0
+            call self.deleteLast()
+            call self.showText(self._prompt . " ")
+        endif
+
+        normal! G$
+    endfunction
