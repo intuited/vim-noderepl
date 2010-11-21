@@ -78,26 +78,40 @@ endfunct
             return
         endif
 
-        if self.isReplCommand(cmd)
-            call self.doReplCommand(cmd)
-            return
-        endif
+        " Not supporting this vimclojure#Repl functionality (yet?)
+        ""++  if self.isReplCommand(cmd)
+        ""++      call self.doReplCommand(cmd)
+        ""++      return
+        ""++  endif
 
-        let result = vimclojure#ExecuteNailWithInput("CheckSyntax", cmd)
-        if result == "false"
-            execute "normal! GA\<CR>x"
-            normal! ==x
-            startinsert!
-        else
-            let result = vimclojure#ExecuteNailWithInput("Repl", cmd,
-                        \ "-r", "-i", self._id)
+        let [syntax_okay, result] = self.RunReplCommand(cmd)
+
+        if syntax_okay
             call self.showText(result)
 
             let self._historyDepth = 0
             let self._history = [cmd] + self._history
             call self.showPrompt()
+        else
+            execute "normal! GA\<CR>x"
+            normal! ==x
+            startinsert!
         endif
     endfunction
+
+""__  dragons
+
+    " Runs the repl command in self's context (held in `self._id`).
+    " Return:
+    "   [syntax_okay, result] where
+    "       syntax_okay is non-zero if `cmd` was parsed correctly
+    "       result is the result.
+    funct! noderepl#Repl.RunReplCommand(cmd, context)
+        " TODO write this!
+        return [1, "Fake REPL command result"]
+    endfunct
+
+""^^ dragons
 
     function! vimclojure#Repl.upHistory() dict
         let histLen = len(self._history)
