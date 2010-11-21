@@ -1,6 +1,6 @@
 " Creates a repl in a new buffer.
 funct! noderepl#StartRepl()
-    call noderepl#Repl.New()
+    call g:noderepl#Repl.New()
 endfunct
 
 let noderepl#Repl = copy(vimclojure#Repl)
@@ -106,7 +106,7 @@ endfunct
     "   [syntax_okay, result] where
     "       syntax_okay is non-zero if `cmd` was parsed correctly
     "       result is the result.
-    funct! noderepl#Repl.RunReplCommand(cmd, context)
+    funct! noderepl#Repl.RunReplCommand(cmd)
         " TODO write this!
         return [1, "Fake REPL command result"]
     endfunct
