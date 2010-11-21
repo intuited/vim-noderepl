@@ -3,6 +3,18 @@ funct! noderepl#StartRepl()
     call g:noderepl#Repl.New()
 endfunct
 
+python import vim, sys, os
+python sys.path.insert(0, os.path.join(vim.eval("expand('<sfile>:p:h')"),
+                                     \ "noderepl"))
+python import poste
+
+" Holds connection details like port and server
+" which can be overridden by setting repl dictionary elements.
+" The elements should correspond to
+" keyword arguments to the Python function `poste.post`.
+let g:noderepl_connect = {}
+
+
 let noderepl#Repl = copy(vimclojure#Repl)
 
 " Creates a repl in a new buffer.
@@ -14,6 +26,8 @@ funct! noderepl#Repl.New() dict
     new
     setlocal buftype=nofile
     setlocal noswapfile
+
+    call instance._InitConnectInfo()
 
     call instance._SetupHistory()
 
@@ -33,8 +47,14 @@ endfunct
 
 " Various functions called by the New method:
 
+    " Set up the connect info dictionary.
+    " See the declaration of `g:noderepl_connect` for more info.
+    funct! noderepl#Repl._InitConnectInfo() dict
+        let self.connect_info = {}
+    endfunct
+
     " Set up the history-related key mappings.
-    funct! noderepl#Repl._SetupHistory()
+    funct! noderepl#Repl._SetupHistory() dict
         " TODO: rename these plug commands.
         if !hasmapto("<Plug>NodereplEnterHook")
             imap <buffer> <silent> <CR> <Plug>NodereplEnterHook
@@ -50,20 +70,21 @@ endfunct
     " Write the REPL intro line, including the first prompt.
     " This function should write to the current buffer
     " and not change which buffer is current.
-    funct! noderepl#Repl._WriteReplHeader()
+    funct! noderepl#Repl._WriteReplHeader() dict
         call append(line("$"), ["Node", self._prompt . " "])
     endfunct
 
     " Communicates with the running node instance
     " and returns the name of a new repl context.
-    funct! noderepl#Repl._NewReplContext()
+    funct! noderepl#Repl._NewReplContext() dict
         " TODO: implement this stub
+        "       after writing node code to create uniquely named contexts.
         return "vim-noderepl"
     endfunct
 
     " Perform any node-side initialization like requiring modules.
     " VimClojure requires its stacktrace module.
-    funct! noderepl#Repl._InitializeRepl()
+    funct! noderepl#Repl._InitializeRepl() dict
         " TODO: See if anything needs to go here.
     endfunct
 
@@ -108,7 +129,11 @@ endfunct
     "       result is the result.
     funct! noderepl#Repl.RunReplCommand(cmd)
         " TODO write this!
-        return [1, "Fake REPL command result"]
+        let connect_info = extend(copy(self.connect_info), g:noderepl_connect)
+
+        python NodeRepl.run_repl_command(vim.eval("a:cmd"),
+                                       \ vim.eval("l:connect_info"),
+                                       \ context=vim.eval("self._id"))
     endfunct
 
 ""^^ dragons
@@ -147,3 +172,16 @@ endfunct
 
         normal! G$
     endfunction
+
+python <<EOF
+class NodeRepl(object):
+    @staticmethod
+    def run_repl_command(cmd, post_args, context=None):
+        """Pass the REPL command `cmd` to node for evaluation.
+        
+        The dictionary `post_args` is used as keyword arguments to `poste.post`.
+        """
+        result = poste.post(poste.Evaluate(cmd, context=context), **post_args)
+        success = 0 if isinstance(result, poste.SynError) else 1
+        vim.command("return {0}".format([success, str(result)]))
+EOF
