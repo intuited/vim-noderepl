@@ -1,7 +1,9 @@
 " Creates a repl in a new buffer.
+" This is called by the NodeRepl command.
 funct! noderepl#StartRepl()
     call g:noderepl#Repl.New()
 endfunct
+
 
 " Holds connection details like port and server
 " which can be overridden by setting repl dictionary elements.
@@ -10,7 +12,73 @@ endfunct
 let g:noderepl_connect = {}
 
 
-let noderepl#Repl = copy(vimclojure#Repl)
+" General-purpose support functions.
+" These were acquired directly from VimClojure.
+    function! noderepl#WithSaved(closure)
+        let v = a:closure.get(a:closure.tosafe)
+        let r = a:closure.f()
+        call a:closure.set(a:closure.tosafe, v)
+        return r
+    endfunction
+
+    function! noderepl#WithSavedPosition(closure)
+        let a:closure['tosafe'] = "."
+        let a:closure['get'] = function("getpos")
+        let a:closure['set'] = function("setpos")
+        return noderepl#WithSaved(a:closure)
+    endfunction
+
+    function! noderepl#WithSavedRegister(closure)
+        let a:closure['get'] = function("getreg")
+        let a:closure['set'] = function("setreg")
+        return noderepl#WithSaved(a:closure)
+    endfunction
+
+    function! noderepl#Yank(r, how)
+        let closure = {'tosafe': a:r, 'yank': a:how}
+
+        function closure.f() dict
+            silent execute self.yank
+            return getreg(self.tosafe)
+        endfunction
+
+        return noderepl#WithSavedRegister(closure)
+    endfunction
+
+
+" Buffer type that the repl type is based on.
+" Taken directly from VimClojure.
+    let noderepl#Buffer = {}
+
+    function! noderepl#Buffer.goHere() dict
+        execute "buffer! " . self._buffer
+    endfunction
+
+    function! noderepl#Buffer.resize() dict
+        call self.goHere()
+        let size = line("$")
+        if size < 3
+            let size = 3
+        endif
+        execute "resize " . size
+    endfunction
+
+    function! noderepl#Buffer.showText(text) dict
+        call self.goHere()
+        if type(a:text) == type("")
+            let text = split(a:text, '\n')
+        else
+            let text = a:text
+        endif
+        call append(line("$"), text)
+    endfunction
+
+    function! noderepl#Buffer.close() dict
+        execute "bdelete! " . self._buffer
+    endfunction
+
+
+let noderepl#Repl = copy(noderepl#Buffer)
 
 let noderepl#Repl._prompt = "Node=>"
 let noderepl#Repl._history = []
@@ -92,7 +160,7 @@ endfunct
     endfunct
 
     " Perform any node-side initialization like requiring modules.
-    " VimClojure requires its stacktrace module.
+    " The VimClojure repl loads its stacktrace module here.
     funct! noderepl#Repl._InitializeRepl() dict
         " TODO: See if anything needs to go here.
     endfunct
@@ -115,7 +183,7 @@ endfunct
         ""++      return
         ""++  endif
 
-        let [syntax_okay, result] = self.RunReplCommand(cmd)
+        let [syntax_okay, result] = self.runReplCommand(cmd)
 
         if syntax_okay
             call self.showText(result)
@@ -129,19 +197,6 @@ endfunct
             startinsert!
         endif
     endfunction
-
-    " Runs the repl command in self's context (held in `self._id`).
-    " Return: `[syntax_okay, result]` where
-    "     -   `syntax_okay` is non-zero if `cmd` was parsed correctly.
-    "         This should be used to indicate that a command is incomplete.
-    "     -   `result` is the result.
-    funct! noderepl#Repl.RunReplCommand(cmd)
-        let connect_info = extend(copy(self.connect_info), g:noderepl_connect)
-
-        python NodeRepl.run_repl_command(vim.eval("a:cmd"),
-                                       \ vim.eval("l:connect_info"),
-                                       \ context=vim.eval("self._id"))
-    endfunct
 
     " Handles cycling back in the history, normally via CTRL-UP.
     function! noderepl#Repl.upHistory() dict
@@ -179,6 +234,60 @@ endfunct
 
         normal! G$
     endfunction
+
+" Functions which actually interact with the interpreter
+    " Runs the repl command in self's context (held in `self._id`).
+    " Return: `[syntax_okay, result]` where
+    "     -   `syntax_okay` is non-zero if `cmd` was parsed correctly.
+    "         This should be used to indicate that a command is incomplete.
+    "     -   `result` is the result.
+    funct! noderepl#Repl.runReplCommand(cmd)
+        let connect_info = extend(copy(self.connect_info), g:noderepl_connect)
+
+        python NodeRepl.run_repl_command(vim.eval("a:cmd"),
+                                       \ vim.eval("l:connect_info"),
+                                       \ context=vim.eval("self._id"))
+    endfunct
+
+
+" Other support functions
+    function! noderepl#Repl.showPrompt() dict
+        call self.showText(self._prompt . " ")
+        normal! G
+        startinsert!
+    endfunction
+
+    function! noderepl#Repl.getCommand() dict
+        let ln = line("$")
+
+        while getline(ln) !~ "^" . self._prompt && ln > 0
+            let ln = ln - 1
+        endwhile
+
+        " Special Case: User deleted Prompt by accident. Insert a new one.
+        if ln == 0
+            call self.showPrompt()
+            return ""
+        endif
+
+        let cmd = noderepl#Yank("l", ln . "," . line("$") . "yank l")
+
+        let cmd = substitute(cmd, "^" . self._prompt . "\\s*", "", "")
+        let cmd = substitute(cmd, "\n$", "", "")
+        return cmd
+    endfunction
+
+    function! noderepl#Repl.deleteLast() dict
+        normal! G
+
+        while getline("$") !~ self._prompt
+            normal! dd
+        endwhile
+
+        normal! dd
+    endfunction
+
+
 
 python <<EOF
 import vim, sys, os
