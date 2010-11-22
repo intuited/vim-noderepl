@@ -74,6 +74,10 @@ you can check to see if yours does by reading the output of ``:version``.
 
 To start a REPL, execute the vim command ``:NodeRepl``.
 
+A goal of the vim addon is to generalize the repl logic
+so that it can be applied to other languages and systems
+which allow execution environments to persist across connections.
+
 Interface
 ^^^^^^^^^
 
@@ -90,6 +94,7 @@ Mappings which work in insert mode::
                     that command is added to the history.
 
 The string "Node=>" is used as the REPL prompt.
+
 
 Issues
 ------
