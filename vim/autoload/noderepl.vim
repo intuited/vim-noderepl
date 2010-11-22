@@ -3,11 +3,6 @@ funct! noderepl#StartRepl()
     call g:noderepl#Repl.New()
 endfunct
 
-python import vim, sys, os
-python sys.path.insert(0, os.path.join(vim.eval("expand('<sfile>:p:h')"),
-                                     \ "noderepl"))
-python import poste
-
 " Holds connection details like port and server
 " which can be overridden by setting repl dictionary elements.
 " The elements should correspond to
@@ -16,6 +11,10 @@ let g:noderepl_connect = {}
 
 
 let noderepl#Repl = copy(vimclojure#Repl)
+
+let noderepl#Repl._prompt = "Node=>"
+let noderepl#Repl._history = []
+let noderepl#Repl._historyDepth = 0
 
 " Creates a repl in a new buffer.
 " The new dictionary instance is stored in `b:noderepl`.
@@ -34,12 +33,14 @@ funct! noderepl#Repl.New() dict
     call instance._WriteReplHeader()
 
     let instance._id = instance._NewReplContext()
+
     call instance._InitializeRepl()
+
     let instance._buffer = bufnr("%")
 
     let b:noderepl = instance
 
-    setfiletype clojure
+    call instance._SetFileType()
 
     normal! G
     startinsert!
@@ -79,7 +80,15 @@ endfunct
     funct! noderepl#Repl._NewReplContext() dict
         " TODO: implement this stub
         "       after writing node code to create uniquely named contexts.
+        " TODO: It should also be possible to select a context
+        "       when executing :NodeRepl.
         return "vim-noderepl"
+    endfunct
+
+    " Set up filetype-related items.
+    " This hook is called after the buffer has been created and initialized.
+    funct! noderepl#Repl._SetFileType() dict
+        setfiletype javascript
     endfunct
 
     " Perform any node-side initialization like requiring modules.
@@ -91,6 +100,7 @@ endfunct
 
 " Callback functions to interface with the interpreter
 
+    " Called in response to a press of the ENTER key in insert mode.
     function! noderepl#Repl.enterHook() dict
         let cmd = self.getCommand()
 
@@ -120,15 +130,12 @@ endfunct
         endif
     endfunction
 
-""__  dragons
-
     " Runs the repl command in self's context (held in `self._id`).
-    " Return:
-    "   [syntax_okay, result] where
-    "       syntax_okay is non-zero if `cmd` was parsed correctly
-    "       result is the result.
+    " Return: `[syntax_okay, result]` where
+    "     -   `syntax_okay` is non-zero if `cmd` was parsed correctly.
+    "         This should be used to indicate that a command is incomplete.
+    "     -   `result` is the result.
     funct! noderepl#Repl.RunReplCommand(cmd)
-        " TODO write this!
         let connect_info = extend(copy(self.connect_info), g:noderepl_connect)
 
         python NodeRepl.run_repl_command(vim.eval("a:cmd"),
@@ -136,9 +143,8 @@ endfunct
                                        \ context=vim.eval("self._id"))
     endfunct
 
-""^^ dragons
-
-    function! vimclojure#Repl.upHistory() dict
+    " Handles cycling back in the history, normally via CTRL-UP.
+    function! noderepl#Repl.upHistory() dict
         let histLen = len(self._history)
         let histDepth = self._historyDepth
 
@@ -154,7 +160,8 @@ endfunct
         normal! G$
     endfunction
 
-    function! vimclojure#Repl.downHistory() dict
+    " Handles cycling forward in the history, normally via CTRL-DOWN.
+    function! noderepl#Repl.downHistory() dict
         let histLen = len(self._history)
         let histDepth = self._historyDepth
 
@@ -174,7 +181,14 @@ endfunct
     endfunction
 
 python <<EOF
+import vim, sys, os
+sys.path.insert(0, os.path.join(vim.eval("expand('<sfile>:p:h')"),
+                                "noderepl"))
+import poste
+
 class NodeRepl(object):
+    """Glue code to streamline calls to the Python `poste` module."""
+
     @staticmethod
     def escape_string(string):
         """Escape a string for vim evaluation."""

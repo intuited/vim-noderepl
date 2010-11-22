@@ -4,6 +4,7 @@
 // -    There should be some way to create a uniquely-named context.
 // -    At some point it would be nice to add a way to delete contexts.
 // -    Transfer `console.log` calls over to some other logging mechanism.
+//      -   a verbose or debug option would be useful for this.
 var net = require('net');
 var util = require('util');
 var Script = process.binding('evals').Script;
