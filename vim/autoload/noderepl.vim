@@ -176,6 +176,11 @@ endfunct
 python <<EOF
 class NodeRepl(object):
     @staticmethod
+    def escape_string(string):
+        """Escape a string for vim evaluation."""
+        return "'{0}'".format(string.replace("'", "''"))
+
+    @staticmethod
     def run_repl_command(cmd, post_args, context=None):
         """Pass the REPL command `cmd` to node for evaluation.
         
@@ -183,5 +188,6 @@ class NodeRepl(object):
         """
         result = poste.post(poste.Evaluate(cmd, context=context), **post_args)
         success = 0 if isinstance(result, poste.SynError) else 1
-        vim.command("return {0}".format([success, str(result)]))
+        result = NodeRepl.escape_string(str(result))
+        vim.command("return [{0}, {1}]".format(success, result))
 EOF
