@@ -1,0 +1,118 @@
+``node-replique``
+=================
+
+``node-replique`` consists of node server code,
+a python client interface (also accessible from the command line),
+and a Vim addon which provides a REPL in a Vim buffer.
+
+
+Usage
+-----
+
+To start a replique server, run ::
+
+    $ node src/node-replique.js
+
+At this point you should be able to connect with the Python CLI, e.g.::
+
+    $ client/poste.py evaluate '["hello", "world"].join(" ")'
+    'hello world'
+
+
+Protocol
+--------
+
+The replique protocol consists of requests and responses made in JSON format.
+
+A typical exchange looks like this::
+
+    Request:
+        { code: '["hello", "world"].join(" ")',
+          command: 'evaluate' }
+
+
+TODO: add response to "typical exchange"
+
+
+The server will respond as soon as it receives a chunk of data
+which concludes a string of properly-formed JSON data.
+
+This is implemented by attempting to parse
+repeatedly concatenated chunks of data,
+which is not particularly efficent if there are multiple chunks
+for a single command.
+
+The node server will use the port 4994.
+
+
+Python interface
+----------------
+
+The Python interface is provided for the convenience of applications like,
+for example, the vim addon.
+
+The module also serves as a command-line client to an active Replique instance.
+
+The interface is pretty simple; for a usage example,
+check out the CLI code.
+
+The CLI and the module itself both live in ``client/poste.py``.
+
+
+Vim addon
+---------
+
+The vim addon ``noderepl`` provides a convenient node REPL within vim.
+
+It's based on the `VimClojure`_ addon.
+
+``noderepl`` uses the Python interface,
+so you will need a Python-activated version of Vim in order to use it.
+
+Most versions of Vim fit this description;
+you can check to see if yours does by reading the output of ``:version``.
+
+To start a REPL, execute the vim command ``:NodeRepl``.
+
+Interface
+^^^^^^^^^
+
+Mappings which work in insert mode::
+
+    CTRL-(up|down): navigate (back|for)wards through the history.
+    ENTER:          This will attempt to evaluate the current statement.
+                    If a SyntaxError is incurred
+                    -- indicating a partial expression --
+                    the REPL cursor just moves to the next line,
+                    making the entered text part of a multi-line command.
+                    Entering multi-line commands works in the obvious way:
+                    if a multi-line command evaluates without a syntax error,
+                    that command is added to the history.
+
+The string "Node=>" is used as the REPL prompt.
+
+Issues
+------
+
+-   Node itself has some weird glitches with respect to parsing and evaluation.
+    For example, entering ::
+        {two: 2}
+    will result in an evaluation of ``2``.
+    Also, object literals which are given as the entirety of an expression
+    and include string keys, for example ::
+        {"two": 2}
+    will result in a SyntaxError.
+
+    These issues are present in the regular node REPL
+    which starts when you run ``node`` from the command line.
+
+    `noderepl` and `node-replique` do not attempt to correct these problems,
+    or whatever they are.
+
+TODO
+----
+
+-   Effect consistent capitalization of "noderepl".
+-   Various TODO items in source files.
+-   Completion in the vim REPL.
+-   Use of contexts.
