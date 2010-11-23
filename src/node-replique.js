@@ -5,6 +5,11 @@
 // -    At some point it would be nice to add a way to delete contexts.
 // -    Transfer `console.log` calls over to some other logging mechanism.
 //      -   a verbose or debug option would be useful for this.
+// -    The server should be an object that can be instantiated
+//      with the port it should run on.
+// -    Reorganize this code so that there are two different request handlers
+//      with process, format, etc. methods
+//      rather than grouping by role and then request type.
 var net = require('net');
 var util = require('util');
 var Script = process.binding('evals').Script;
@@ -53,9 +58,9 @@ net.createServer(function (stream) {
    * Add all attributes from `additions` to an instantiation of `base`.
    * Am I missing something?  Is there a standard way to do this?
    *
-   * I should also solve the mystery of why the repl complete routine
-   * is written in such a way that it doesn't complete attributes
-   * of prototypes derived from using `Object.create`.
+   * TODO: I should also solve the mystery of why the repl complete routine
+   *       is written in such a way that it doesn't complete attributes
+   *       of prototypes derived from using `Object.create`.
    */
   function derive(base, additions) {
     var derived = Object.create(base);
@@ -67,6 +72,8 @@ net.createServer(function (stream) {
 
   /**
    * Another one that should probably be acquired from a library.
+   * TODO: Actually this is built in to node's Function prototype.
+   *       Revise code to use it.
    */
   function bind(obj, method) {
     return function () {
@@ -146,11 +153,11 @@ net.createServer(function (stream) {
   function reply(request, stream) {
     console.log(util.inspect(['parsed request', request]));  //~~
     command = request.command;
-    return ['evaluate', 'complete'].indexOf(command) > -1
+    return (['evaluate', 'complete'].indexOf(command) > -1
       ? handlers[command](contexts,
                           new writers[command](stream),
                           request)
-      : invalidRequest(request, stream);
+      : invalidRequest(request, stream));
   }
 
 
