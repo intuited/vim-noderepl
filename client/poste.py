@@ -52,6 +52,8 @@ class Error(_Replique):
 
 class Completions(_Replique):
     result = 'completions'
+    def __iter__(self):
+        return iter(self.replique[self.result])
 
 
 def post(poste, host='localhost', port=4994, timeout=2):

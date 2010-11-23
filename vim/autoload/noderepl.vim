@@ -110,6 +110,8 @@ funct! noderepl#Repl.New() dict
 
     call instance._SetFileType()
 
+    call instance._SetupCompletion()
+
     normal! G
     startinsert!
 endfunct
@@ -157,6 +159,11 @@ endfunct
     " This hook is called after the buffer has been created and initialized.
     funct! noderepl#Repl._SetFileType() dict
         setfiletype javascript
+    endfunct
+
+    " Set up omni completion for the REPL buffer.
+    funct! noderepl#Repl._SetupCompletion() dict
+        setlocal omnifunc=noderepl#OmniCompletion
     endfunct
 
     " Perform any node-side initialization like requiring modules.
@@ -235,22 +242,25 @@ endfunct
         normal! G$
     endfunction
 
-" Functions which actually interact with the interpreter
+" Methods which actually interact with the interpreter
     " Runs the repl command in self's context (held in `self._id`).
     " Return: `[syntax_okay, result]` where
     "     -   `syntax_okay` is non-zero if `cmd` was parsed correctly.
     "         This should be used to indicate that a command is incomplete.
     "     -   `result` is the result.
     funct! noderepl#Repl.runReplCommand(cmd)
-        let connect_info = extend(copy(self.connect_info), g:noderepl_connect)
+        let connect_info = extend(copy(g:noderepl_connect), self.connect_info)
 
-        python NodeRepl.run_repl_command(vim.eval("a:cmd"),
-                                       \ vim.eval("l:connect_info"),
-                                       \ context=vim.eval("self._id"))
+        python vim.command("return {0}".format(
+                           \ NodeRepl.run_repl_command(
+                             \ vim.eval("a:cmd"),
+                             \ vim.eval("l:connect_info"),
+                             \ context=vim.eval("self._id"))))
     endfunct
 
 
-" Other support functions
+
+" Other support methods
     function! noderepl#Repl.showPrompt() dict
         call self.showText(self._prompt . " ")
         normal! G
@@ -289,6 +299,66 @@ endfunct
 
 
 
+" Omni-completion
+    function! noderepl#OmniCompletion(findstart, base)
+        if exists('b:noderepl')
+            return b:noderepl.complete(a:findstart, a:base)
+        else
+            " This shouldn't happen.
+            throw "noderepl#OmniCompletion called on non-repl buffer."
+        endif
+    endfunct
+
+    funct! noderepl#Repl.complete(findstart, base) dict
+        if a:findstart == 1
+            return self._completeFindStart(getline('.'), col('.') - 1)
+        else
+            return self._completeList(a:base)
+        endif
+    endfunction
+
+    " TODO: There must be a better way to do this.  Can use 'iskeyword'?
+    let noderepl#Repl._wordChars = '\w\|\.'
+
+    " Handles the completion case where a:findstart == 0.
+    " Returns the column of the first character of the chunk of text
+    " which should be completed at the cursor position.
+    funct! noderepl#Repl._completeFindStart(line, startCol) dict
+        let start = a:startCol
+        while start > 0 && a:line[start - 1] =~ self._wordChars
+            let start -= 1
+        endwhile
+        return start
+    endfunct
+
+    funct! noderepl#Repl._completeList(base) dict
+        let connect_info = extend(copy(g:noderepl_connect), self.connect_info)
+
+        " python vim.command('return {0}'.format(str(["one", "two", "three"])))
+        python base = vim.eval('a:base')
+        python ci = vim.eval('l:connect_info')
+        python cx = vim.eval('self._id')
+        python vim.command("return {0}".format(
+               \ NodeRepl.complete(
+                 \ vim.eval('a:base'),
+                 \ vim.eval('l:connect_info'),
+                 \ vim.eval('self._id'))))
+        ""__  works
+        python vim.command("return {0}".format(
+               \ [
+                 \ vim.eval('a:base'),
+                 \ vim.eval('l:connect_info'),
+                 \ vim.eval('self._id')]))
+        ""__  should be this; doesn't work
+        python vim.command("return {0}".format(
+                           \ NodeRepl.complete(
+                             \ vim.eval('a:base'),
+                             \ vim.eval('l:connect_info'),
+                             \ context=vim.eval('self._id'))))
+    endfunct
+
+
+
 python <<EOF
 import vim, sys, os
 sys.path.insert(0, os.path.join(vim.eval("expand('<sfile>:p:h')"),
@@ -304,13 +374,30 @@ class NodeRepl(object):
         return "'{0}'".format(string.replace("'", "''"))
 
     @staticmethod
-    def run_repl_command(cmd, post_args, context=None):
+    def run_repl_command(cmd, post_args={}, context=None):
         """Pass the REPL command `cmd` to node for evaluation.
         
-        The dictionary `post_args` is used as keyword arguments to `poste.post`.
+        The dictionary `post_args` contains keyword arguments to `poste.post`.
+
+        Returns a string which can be evaled in vim
+        to obtain the List [syntax_okay, result].
+        See noderepl#Repl.runReplCommand for details.
         """
         result = poste.post(poste.Evaluate(cmd, context=context), **post_args)
         success = 0 if isinstance(result, poste.SynError) else 1
         result = NodeRepl.escape_string(str(result))
-        vim.command("return [{0}, {1}]".format(success, result))
+        return "[{0}, {1}]".format(success, result)
+
+    @staticmethod
+    def complete(base, post_args={}, context=None):
+        """Complete the `base` expression in `context`.
+
+        Returns a string which can be evaled in vim
+        to obtain the list of completions.
+        """
+        request = poste.Complete(base, context=context)
+        completions = poste.post(request, **post_args)
+        # TODO: guard against presence of "'" within completion strings.
+        completions = map(str, completions)
+        return str(completions)
 EOF
