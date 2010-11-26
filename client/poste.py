@@ -24,6 +24,13 @@ class Evaluate(Poste):
 class Complete(Poste):
     command = 'complete'
 
+class UniqueContext(Poste):
+    """Used to request creation of a new, unique context.
+
+    The `context` parameter should contain the prefix for the new context.
+    """
+    command = 'uniqueContext'
+
 
 def Replique(replique):
     """Parse a server response into an object of that type."""
@@ -34,6 +41,15 @@ def Replique(replique):
                     .format(replique))
 
 class _Replique(object):
+    """ABC of the various types of repliques.
+
+    A response from the node server is type-cast
+    to one of this class's descendants.
+
+    The type-casting is done based on
+    the presence of a key in the JSON response
+    matching the value of the class's `result` attribute.
+    """
     def __init__(self, replique):
         self.replique = replique
     def __repr__(self):
@@ -45,6 +61,9 @@ class Value(_Replique):
     result = u'value'
 
 class SynError(_Replique):
+    """
+    Repliques of this type usually indicate that the passed code was incomplete.
+    """
     result = 'syntaxError'
 
 class Error(_Replique):
@@ -54,6 +73,10 @@ class Completions(_Replique):
     result = 'completions'
     def __iter__(self):
         return iter(self.replique[self.result])
+
+class NewContext(_Replique):
+    """Indicates that a new context was successfully created."""
+    result = 'newContext'
 
 
 def post(poste, host='localhost', port=4994, timeout=2):

@@ -1,7 +1,40 @@
+" TODO:
+"   -   Make function naming/capitalization/initial-underscoring consistent
+"   -   I think the StartRepl* functions and default_context
+"       should be moved into the Repl object so they can be overridden.
+"   -   Repl._id should be called Repl._context
+
+" The name of the context to be used by default.
+" Individual REPLs can use a different context
+" by calling noderepl#StartReplContext.
+let noderepl#default_context = 'vim-noderepl'
+
+" noderepl#StartRepl(name=noderepl#default_context, unique=0)
 " Creates a repl in a new buffer.
 " This is called by the NodeRepl command.
-funct! noderepl#StartRepl()
-    call g:noderepl#Repl.New()
+funct! noderepl#StartRepl(...)
+    let name = a:0 ? a:1 : g:noderepl#default_context
+    let unique = a:0 > 1 ? a:2 : 0
+    call g:noderepl#Repl.New(name, unique)
+endfunct
+
+" noderepl#StartReplContext(name=noderepl#default_context, unique=0)
+"
+" If already in a repl, start using a context with the given `name`.
+" If not in a repl, start a new one in a new buffer
+" using the named context.
+" If the named context does not already exist, it is created.
+" 
+" If `unique` is nonzero, a new, unique context is created,
+" using `name` as a prefix.
+funct! noderepl#StartReplContext(...)
+    let name = a:0 ? a:1 : g:noderepl#default_context
+    let unique = a:0 > 1 ? a:2 : 0
+    if exists('b:noderepl')
+        let b:noderepl._id = b:noderepl._getReplContext(name, unique)
+    else
+        call noderepl#StartRepl(name, unique)
+    endif
 endfunct
 
 
@@ -86,8 +119,7 @@ let noderepl#Repl._historyDepth = 0
 
 " Creates a repl in a new buffer.
 " The new dictionary instance is stored in `b:noderepl`.
-" This function is called by the StartRepl plugin that's mapped to \sr.
-funct! noderepl#Repl.New() dict
+funct! noderepl#Repl.New(name, unique) dict
     let instance = copy(self)
 
     new
@@ -100,7 +132,7 @@ funct! noderepl#Repl.New() dict
 
     call instance._WriteReplHeader()
 
-    let instance._id = instance._NewReplContext()
+    let instance._id = instance._getReplContext(a:name, a:unique)
 
     call instance._InitializeRepl()
 
@@ -146,13 +178,31 @@ endfunct
     endfunct
 
     " Communicates with the running node instance
-    " and returns the name of a new repl context.
-    funct! noderepl#Repl._NewReplContext() dict
+    " and returns the name of a repl context.
+    " Parameters:
+    "   name:   The name of the context to be returned.
+    "           If the named context does not already exist, it is created.
+    "   unique: If non-zero, the name will be used as a prefix
+    "           for a new, uniquely-named context.
+    " Return:
+    "   The name of the created context.
+    funct! noderepl#Repl._getReplContext(name, unique) dict
         " TODO: implement this stub
         "       after writing node code to create uniquely named contexts.
         " TODO: It should also be possible to select a context
         "       when executing :NodeRepl.
-        return "vim-noderepl"
+        let connect_info = extend(copy(g:noderepl_connect), self.connect_info)
+
+        if a:unique
+            python vim.command("return {0}".format(
+                   \ NodeRepl.create_unique_context(
+                     \ vim.eval('a:name'),
+                     \ vim.eval('l:connect_info'))))
+        else
+            " If the new context doesn't need to have a unique name,
+            " it will be autovivified when the first REPL command is run.
+            return a:name
+        endif
     endfunct
 
     " Set up filetype-related items.
@@ -400,4 +450,9 @@ class NodeRepl(object):
         # TODO: guard against presence of "'" within completion strings.
         completions = map(str, completions)
         return str(completions)
+
+    @staticmethod
+    def create_unique_context(prefix, post_args={}):
+        request = poste.UniqueContext("", context=prefix)
+        return NodeRepl.escape_string(str(poste.post(request, **post_args)))
 EOF

@@ -10,6 +10,8 @@
 // -    Reorganize this code so that there are two different request handlers
 //      with process, format, etc. methods
 //      rather than grouping by role and then request type.
+// -    Context creation seems to be wrapping the context in which it happens.
+//      This results in e.g. `writers`, `handlers`, `command` being included.
 var net = require('net');
 var util = require('util');
 var Script = process.binding('evals').Script;
@@ -27,7 +29,8 @@ net.createServer(function (stream) {
     try {
       request = JSON.parse(request);
     } catch (e) {
-      // This means the JSON was incorrectly formed, presumably incomplete.
+      // This means the JSON was incorrectly formed
+      // and is presumably incomplete.
       // We go back to waiting for another chunk.
       // TODO: check if there are any errors possible here
       //       which do not indicate incomplete JSON.
@@ -58,7 +61,7 @@ net.createServer(function (stream) {
    * Add all attributes from `additions` to an instantiation of `base`.
    * Am I missing something?  Is there a standard way to do this?
    *
-   * TODO: I should also solve the mystery of why the repl complete routine
+   * TODO: I should also solve the mystery of why node's repl complete routine
    *       is written in such a way that it doesn't complete attributes
    *       of prototypes derived from using `Object.create`.
    */
@@ -122,6 +125,7 @@ net.createServer(function (stream) {
     get:
       /**
        * Make sure there's a valid name and a context for that name.
+       * `name` defaults to "default".
        */
       function (name) {
         var name = name || "default";
@@ -134,6 +138,21 @@ net.createServer(function (stream) {
         }
         return this.contexts[name];
       },
+
+    createUniqueContext:
+      /**
+       * Creates a new uniquely-numbered context using the given prefix.
+       * The context is stored in this object, and the name is returned.
+       */
+      function (prefix) {
+        var i = 1;
+        var contextName = prefix + String(i);
+        while (this.contexts.hasOwnProperty(contextName)) {
+          contextName = prefix + String(++i);
+        }
+        this.contexts[contextName] = this.createContext(contextName);
+        return contextName;
+      }
   }
   contexts = new Contexts()
 
@@ -153,7 +172,7 @@ net.createServer(function (stream) {
   function reply(request, stream) {
     console.log(util.inspect(['parsed request', request]));  //~~
     command = request.command;
-    return (['evaluate', 'complete'].indexOf(command) > -1
+    return (['evaluate', 'complete', 'uniqueContext'].indexOf(command) > -1
       ? handlers[command](contexts,
                           new writers[command](stream),
                           request)
@@ -162,8 +181,8 @@ net.createServer(function (stream) {
 
 
 /**
- * Output formatters
- * ^^^^^^^^^^^^^^^^^
+ * Output formatters (writers)
+ * ^^^^^^^^^^^^^^^^^^^^^^^^^^^
  */
 
   /**
@@ -232,14 +251,26 @@ net.createServer(function (stream) {
   CompletionWriter.prototype = derive(Writer.prototype, {
     write:
       function (completions) {
-        this.writeString({ completions: completions[0],
-                           completed: completions[1] });
+        return this.writeString({ completions: completions[0],
+                                  completed: completions[1] });
       }
   });
 
+  function ContextWriter(stream) {
+    this.stream = stream;
+  }
+  ContextWriter.prototype = derive(Writer.prototype, {
+    write:
+      function (context) {
+        return this.writeString({ newContext: context });
+      }
+  });
+
+
   writers = {
     evaluate: EvalRouter,
-    complete: CompletionWriter
+    complete: CompletionWriter,
+    uniqueContext: ContextWriter
   };
 
 
@@ -284,18 +315,30 @@ net.createServer(function (stream) {
     // I *think* it just gets ignored,
     // but since the repl module just serves one context for all repls
     // it could be getting used as a context identifier in a problematic way.
-    var fake_repl = {
+    var fakeRepl = {
       commands: {},
       context: context
     };
     writer.write(
-      repl.REPLServer.prototype.complete.call(fake_repl, expression)
+      repl.REPLServer.prototype.complete.call(fakeRepl, expression)
     );
   }
 
+  /**
+   * Create a new context with the given prefix and write its name.
+   */
+  function createUniqueContext(prefix, writer) {
+    var contextName = contexts.createUniqueContext(prefix);
+    writer.write(contextName);
+  }
+
+  /**
+   * TODO: Reorganize the whole thing.  Right now this isn't actually used.
+   */
   processors = {
     evaluate: evaluate,
-    complete: complete
+    complete: complete,
+    uniqueContext: createUniqueContext
   };
 
 
@@ -303,6 +346,11 @@ net.createServer(function (stream) {
  * Handlers
  * ^^^^^^^^
  */
+
+  /**
+   * TODO: Figure out how this should actually work.
+   *       `evaluate` and `complete` are being used in 2 places.
+   */
 
   function evalRequest(contexts, routes, request) {
     console.log('evalRequest called.');  //~~
@@ -315,7 +363,12 @@ net.createServer(function (stream) {
                     writer, request.code);
   }
 
+  function uniqueContextRequest(contexts, writer, request) {
+    return createUniqueContext(request.context, writer);
+  }
+
   handlers = {
     evaluate: evalRequest,
-    complete: completeRequest
+    complete: completeRequest,
+    uniqueContext: uniqueContextRequest
   };

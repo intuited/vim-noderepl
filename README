@@ -121,3 +121,6 @@ TODO
 -   Various TODO items in source files.
 -   Completion in the vim REPL.
 -   Use of contexts.
+-   Fix issues with the client hanging if the server fails.
+    -   This can happen in vim if the server has crashed;
+        in this case, the vim process will use 100% CPU.
