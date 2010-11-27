@@ -12,6 +12,14 @@
 //      rather than grouping by role and then request type.
 // -    Context creation seems to be wrapping the context in which it happens.
 //      This results in e.g. `writers`, `handlers`, `command` being included.
+
+// Create a base context containing the default globals.
+// This is used to set the contents of newly created contexts.
+var baseGlobals = (function () {
+  var globals = {};
+  for (var e in global) globals[e] = global[e]; 
+  return globals;
+})();
 var net = require('net');
 var util = require('util');
 var Script = process.binding('evals').Script;
@@ -115,8 +123,14 @@ net.createServer(function (stream) {
        */
       function () {
         var newContext = Script.createContext();
-        for (var i in global) newContext[i] = global[i];
-          //??  Not sure if this is appropriate.
+
+        // Add all the globals which existed at this module's initialization
+        for (var i in baseGlobals) newContext[i] = baseGlobals[i];
+
+        // Make the node-replique context available from within its REPLs.
+        newContext.nodeReplique = {}
+        for (var i in global) newContext.nodeReplique[i] = global[i];
+
         newContext.module = module;
         newContext.require = require;
         return newContext;
