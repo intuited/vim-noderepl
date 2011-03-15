@@ -5,6 +5,10 @@
 a python client interface (also accessible from the command line),
 and a Vim addon which provides a REPL in a Vim buffer.
 
+So far ``node-replique`` has only been tested with node 2.x.
+
+TODO: explain that it runs as a separate server.
+TODO: explain typical usage scenario(s)
 
 Usage
 -----
@@ -18,20 +22,21 @@ At this point you should be able to connect with the Python CLI, e.g.::
     $ client/poste.py evaluate '["hello", "world"].join(" ")'
     'hello world'
 
+TODO: Add notes on vim addon usage.
 
 Protocol
 --------
 
 The replique protocol consists of requests and responses made in JSON format.
 
-A typical exchange looks like this::
+A typical exchange looks like this:
 
-    Request:
-        { code: '["hello", "world"].join(" ")',
-          command: 'evaluate' }
+Request::
+    { code: '["hello", "world"].join(" ")',
+      command: 'evaluate' }
 
 
-TODO: add response to "typical exchange"
+TODO: add Response to "typical exchange"
 
 
 The server will respond as soon as it receives a chunk of data
@@ -78,6 +83,9 @@ A goal of the vim addon is to generalize the repl logic
 so that it can be applied to other languages and systems
 which allow execution environments to persist across connections.
 
+TODO: add more info on setting port etc.
+      or a pointer to the vim addon documentation proper
+
 Interface
 ^^^^^^^^^
 
@@ -99,6 +107,24 @@ The string "Node=>" is used as the REPL prompt.
 Issues
 ------
 
+-   Console output is not displayed.
+    Well, it's displayed on the console
+    (the connection that launches replique)
+    which is fairly counter-intuitive
+    since the repl isn't happening on the console.
+    -   It's possible to remedy this
+        by wrapping each REPL evaluation
+        in code that replaces the `console.log` function
+        with one that [also] appends each message
+        to a list of logged messages.
+        That list can then be sent back as a field in the replique.
+        However, it seems perhaps more sensible
+        just to expect users to use a different logging mechanism.
+        Maybe it would be best to a custom log type
+        that routes its entries to a replique `log` field?
+        Then the fake console could just multiplex calls to its log method
+        to both one of these and [optionally] the real console.
+
 -   Node itself has some weird glitches with respect to parsing and evaluation.
     For example, entering ::
         {two: 2}
@@ -117,10 +143,12 @@ Issues
 TODO
 ----
 
--   Effect consistent capitalization of "noderepl".
+-   Effectuate consistent capitalization of "noderepl".
+-   Various TODO items in this file.
 -   Various TODO items in source files.
 -   Completion in the vim REPL.
--   Use of contexts.
 -   Fix issues with the client hanging if the server fails.
     -   This can happen in vim if the server has crashed;
         in this case, the vim process will use 100% CPU.
+-   Add syntax colouring of the "Node=>" prompt in vim repl
+-   Finish generalizing vim repl out to a separate addon
