@@ -1,7 +1,7 @@
 " TODO:
 "   -   Make function naming/capitalization/initial-underscoring consistent
 "   -   Repl._id should be called Repl._context
-
+"   -   Have StartReplContext echo the context if no argument is provided
 
 " General-purpose support functions.
     " These were acquired directly from VimClojure
@@ -80,41 +80,78 @@
     let repl#Repl._prompt = 'REPL=>'
     let repl#Repl._history = []
     let repl#Repl._historyDepth = 0
+    let repl#Repl._default_context = 'default'
 
-    " Creates a repl in a new buffer.
+
+    " Repl creation functions
+
+        " Creates a repl in a new buffer.
+        funct! repl#Repl.StartRepl(...)
+            let name = a:0 ? a:1 : self._default_context
+            let unique = a:0 > 1 ? a:2 : 0
+
+            let instance = copy(self)
+
+            new
+
+            call instance.Init(name, unique)
+        endfunct
+
+        " StartReplContext(name=self._default_context, unique=0)
+            " If already in a repl, start using a context with the given `name`.
+            " If not in a repl, start a new one in a new buffer
+            " using the named context.
+            " If the named context does not already exist, it is created.
+            " 
+            " If `unique` is nonzero, a new, unique context is created,
+            " using `name` as a prefix.
+        funct! repl#Repl.StartReplContext(...)
+            let name = a:0 ? a:1 : self._default_context
+            let unique = a:0 > 1 ? a:2 : 0
+            if exists('b:repl')
+                let b:repl._id = b:repl._GetReplContext(name, unique)
+            else
+                call self.StartRepl(name, unique)
+            endif
+        endfunct
+
+
+    " Initialize a new REPL and its buffer.
+    " The buffer itself should already be created and focused.
     " The new dictionary instance is stored in `b:repl`.
-    funct! repl#Repl.New(name, unique) dict
-        let instance = copy(self)
+    funct! repl#Repl.Init(name, unique) dict
+        call self._SetupBuffer()
 
-        new
-        setlocal buftype=nofile
-        setlocal noswapfile
+        call self._InitConnectInfo()
 
-        call instance._InitConnectInfo()
+        call self._SetupHistory()
 
-        call instance._SetupHistory()
+        call self._WriteReplHeader()
 
-        call instance._WriteReplHeader()
+        let self._id = self._GetReplContext(a:name, a:unique)
 
-        let instance._id = instance._getReplContext(a:name, a:unique)
+        call self._InitializeRepl()
 
-        call instance._InitializeRepl()
+        let self._buffer = bufnr("%")
 
-        let instance._buffer = bufnr("%")
+        let b:repl = self
 
-        let b:repl = instance
+        call self._SetFileType()
 
-        call instance._SetFileType()
+        call self._SetupCompletion()
 
-        call instance._SetupCompletion()
-
-        normal! G
-        startinsert!
+        call self._Activate()
     endfunct
 
     " Implementation-independent initialization methods
     " It may make sense to override some of these;
     " however, it is not necessary.
+
+        " Set up the buffer options.
+        funct! repl#Repl._SetupBuffer()
+            setlocal buftype=nofile
+            setlocal noswapfile
+        endfunct
 
         " Set up the connect info dictionary.
         " See the declaration of `g:repl_connect` for more info.
@@ -159,6 +196,12 @@
         " Perform any interpreter initialization, e.g. loading modules.
         " The VimClojure repl loads its stacktrace module here.
         funct! repl#Repl._InitializeRepl() dict
+        endfunct
+
+        " Get the buffer ready for user input.
+        funct! repl#Repl._Activate()
+            normal! G
+            startinsert!
         endfunct
 
 

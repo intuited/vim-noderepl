@@ -1,43 +1,5 @@
-" TODO:
-"   -   I think the StartRepl* functions and default_context
-"       should be moved into the repl#Repl object
-"       so that they can be overridden.
-
-" The name of the context to be used by default.
-" Individual REPLs can use a different context
-" by calling noderepl#StartReplContext.
-let noderepl#default_context = 'vim-noderepl'
-
 " The path to the Python `poste.py` module.
 let noderepl#poste_path = 'noderepl'
-
-" noderepl#StartRepl(name=noderepl#default_context, unique=0)
-" Creates a repl in a new buffer.
-" This is called by the NodeRepl command.
-funct! noderepl#StartRepl(...)
-    let name = a:0 ? a:1 : g:noderepl#default_context
-    let unique = a:0 > 1 ? a:2 : 0
-    call g:noderepl#Repl.New(name, unique)
-endfunct
-
-" noderepl#StartReplContext(name=noderepl#default_context, unique=0)
-"
-" If already in a repl, start using a context with the given `name`.
-" If not in a repl, start a new one in a new buffer
-" using the named context.
-" If the named context does not already exist, it is created.
-" 
-" If `unique` is nonzero, a new, unique context is created,
-" using `name` as a prefix.
-funct! noderepl#StartReplContext(...)
-    let name = a:0 ? a:1 : g:noderepl#default_context
-    let unique = a:0 > 1 ? a:2 : 0
-    if exists('b:noderepl')
-        let b:noderepl._id = b:noderepl._getReplContext(name, unique)
-    else
-        call noderepl#StartRepl(name, unique)
-    endif
-endfunct
 
 " Holds connection details like port and server
 " which can be overridden by setting repl dictionary elements.
@@ -46,11 +8,12 @@ endfunct
 let g:noderepl_connect = {}
 
 
-
 let noderepl#Repl = copy(repl#Repl)
 
 let noderepl#Repl._header = "node"
 let noderepl#Repl._prompt = "node=>"
+let noderepl#Repl._default_context = 'vim-noderepl'
+
 
 " Set up filetype-related items.
 " This hook is called after the buffer has been created and initialized.
