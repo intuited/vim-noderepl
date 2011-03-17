@@ -162,7 +162,6 @@
 
         " Set up the history-related key mappings.
         funct! repl#Repl._SetupHistory() dict
-            " TODO: rename these plug commands.
             if !hasmapto("<Plug>ReplEnterHook")
                 imap <buffer> <silent> <CR> <Plug>ReplEnterHook
             endif
