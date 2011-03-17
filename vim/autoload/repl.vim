@@ -1,7 +1,8 @@
 " TODO:
 "   -   Make function naming/capitalization/initial-underscoring consistent
-"   -   Repl._id should be called Repl._context
-"   -   Have StartReplContext echo the context if no argument is provided
+"   -   Have NodeReplContext echo the context if no argument is provided
+"   -   Maybe rework command structure 
+"       so that `:Repl` can handle things like changing/displaying context
 
 " General-purpose support functions.
     " These were acquired directly from VimClojure
@@ -109,7 +110,7 @@
             let name = a:0 ? a:1 : self._default_context
             let unique = a:0 > 1 ? a:2 : 0
             if exists('b:repl')
-                let b:repl._id = b:repl._GetReplContext(name, unique)
+                let b:repl._context = b:repl._GetReplContext(name, unique)
             else
                 call self.StartRepl(name, unique)
             endif
@@ -128,7 +129,7 @@
 
         call self._WriteReplHeader()
 
-        let self._id = self._GetReplContext(a:name, a:unique)
+        let self._context = self._GetReplContext(a:name, a:unique)
 
         call self._InitializeRepl()
 
@@ -391,7 +392,7 @@
 
 
         " runReplCommand(cmd)
-            " Runs the repl command in self's context (held in `self._id`).
+            " Runs the repl command in self's context (held in `self._context`).
             " This method should never be called;
             " it is effectively a virtual method which should be overridden
             " to provide functionality specific to the implementation.

@@ -1,4 +1,6 @@
-" The path to the Python `poste.py` module.
+" The path to the Python `poste.py` module,
+" relative to the location of this script.
+" Can also be given as an absolute path.
 let noderepl#poste_path = 'noderepl'
 
 " Holds connection details like port and server
@@ -51,7 +53,7 @@ endfunct
         endif
     endfunct
 
-    " Runs the repl command in self's context (held in `self._id`).
+    " Runs the repl command in self's context (held in `self._context`).
     " Return: `[syntax_okay, result]` where
     "     -   `syntax_okay` is non-zero if `cmd` was parsed correctly.
     "         This should be used to indicate that a command is incomplete.
@@ -63,7 +65,7 @@ endfunct
                            \ NodeRepl.run_repl_command(
                              \ vim.eval("a:cmd"),
                              \ vim.eval("l:connect_info"),
-                             \ context=vim.eval("self._id"))))
+                             \ context=vim.eval("self._context"))))
     endfunct
 
     " Generate the list of possible completions.
@@ -73,25 +75,25 @@ endfunct
         " python vim.command('return {0}'.format(str(["one", "two", "three"])))
         python base = vim.eval('a:base')
         python ci = vim.eval('l:connect_info')
-        python cx = vim.eval('self._id')
+        python cx = vim.eval('self._context')
         " TODO: sort out the lingering debug cases below
         python vim.command("return {0}".format(
                \ NodeRepl.complete(
                  \ vim.eval('a:base'),
                  \ vim.eval('l:connect_info'),
-                 \ vim.eval('self._id'))))
+                 \ vim.eval('self._context'))))
         ""__  works
         python vim.command("return {0}".format(
                \ [
                  \ vim.eval('a:base'),
                  \ vim.eval('l:connect_info'),
-                 \ vim.eval('self._id')]))
+                 \ vim.eval('self._context')]))
         ""__  should be this; doesn't work
         python vim.command("return {0}".format(
                            \ NodeRepl.complete(
                              \ vim.eval('a:base'),
                              \ vim.eval('l:connect_info'),
-                             \ context=vim.eval('self._id'))))
+                             \ context=vim.eval('self._context'))))
     endfunct
 
 
