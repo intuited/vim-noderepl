@@ -4,8 +4,9 @@
 
 
 " General-purpose support functions.
-" These were acquired directly from VimClojure
-" and have not really been processed.
+    " These were acquired directly from VimClojure
+    " and have not really been processed.
+
     function! repl#WithSaved(closure)
         let v = a:closure.get(a:closure.tosafe)
         let r = a:closure.f()
@@ -39,7 +40,8 @@
 
 
 " Buffer type that the repl type is based on.
-" Taken directly from VimClojure.
+    " Taken directly from VimClojure.
+
     let repl#Buffer = {}
 
     function! repl#Buffer.goHere() dict
@@ -70,11 +72,12 @@
     endfunction
 
 
-" The main repl dictionary.
+" The main repl type.
     let repl#Repl = copy(repl#Buffer)
 
-    let repl#Repl._header = "REPL"
-    let repl#Repl._prompt = "REPL=>"
+    " TODO: lose the initial underscores on these properties.
+    let repl#Repl._header = 'REPL'
+    let repl#Repl._prompt = 'REPL=>'
     let repl#Repl._history = []
     let repl#Repl._historyDepth = 0
 
@@ -140,7 +143,7 @@
             call append(line("$"), [self._header, self._prompt . " "])
         endfunct
 
-        " See also repl#Repl._getReplContext,
+        " See also repl#Repl._GetReplContext,
         " located among the interpreter communication methods.
 
         " Set up filetype-related items.
@@ -336,11 +339,11 @@
             "           for a new, uniquely-named context.
             " Return:
             "   The name of the created context.
-        funct! repl#Repl._getReplContext(name, unique) dict
+        funct! repl#Repl._GetReplContext(name, unique) dict
             if a:unique
-                throw 'Base implementation of _getReplContext() '
+                throw 'Base implementation of _GetReplContext() '
                     \ . 'cannot provide unique contexts.'
-            return "default"
+            return self._default_context
         endfunct
 
 

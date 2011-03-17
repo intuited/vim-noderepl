@@ -69,7 +69,7 @@ endfunct
     "           for a new, uniquely-named context.
     " Return:
     "   The name of the created context.
-    funct! noderepl#Repl._getReplContext(name, unique) dict
+    funct! noderepl#Repl._GetReplContext(name, unique) dict
         " TODO: implement this stub
         "       after writing node code to create uniquely named contexts.
         " TODO: It should also be possible to select a context
