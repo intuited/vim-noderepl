@@ -64,8 +64,8 @@ check out the CLI code.
 The CLI and the module itself both live in ``client/poste.py``.
 
 
-Vim addon
----------
+`noderepl` Vim addon
+--------------------
 
 The vim addon ``noderepl`` provides a convenient node REPL within vim.
 
@@ -104,6 +104,19 @@ Mappings which work in insert mode::
 The string "Node=>" is used as the REPL prompt.
 
 
+Footprint
+^^^^^^^^^
+
+`noderepl` is relatively clean in the way it uses Python.
+
+Other than importing the `poste` module,
+its only addition to vim's global Python namespace
+is a class called `NodeRepl`.
+
+`NodeRepl` contains glue code to facilitate the integration
+of the `poste` functionality into the vim addon.
+
+
 Issues
 ------
 
@@ -124,8 +137,9 @@ Issues
         that routes its entries to a replique `log` field?
         Then the fake console could just multiplex calls to its log method
         to both one of these and [optionally] the real console.
+        Is there a package for this?
 
--   Node itself has some weird glitches with respect to parsing and evaluation.
+-   There are some weird glitches with respect to parsing and evaluation.
     For example, entering ::
         {two: 2}
     will result in an evaluation of ``2``.
@@ -134,8 +148,8 @@ Issues
         {"two": 2}
     will result in a SyntaxError.
 
-    These issues are present in the regular node REPL
-    which starts when you run ``node`` from the command line.
+    These issues were present in the regular node REPL
+    until I moved from version 3.something to version 4.2.
 
     `noderepl` and `node-replique` do not attempt to correct these problems,
     or whatever they are.
@@ -146,9 +160,7 @@ TODO
 -   Effectuate consistent capitalization of "noderepl".
 -   Various TODO items in this file.
 -   Various TODO items in source files.
--   Completion in the vim REPL.
 -   Fix issues with the client hanging if the server fails.
     -   This can happen in vim if the server has crashed;
         in this case, the vim process will use 100% CPU.
 -   Add syntax colouring of the "Node=>" prompt in vim repl
--   Finish generalizing vim repl out to a separate addon
