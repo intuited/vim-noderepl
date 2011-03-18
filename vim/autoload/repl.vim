@@ -5,6 +5,7 @@
 "       so that `:Repl` can handle things like changing/displaying context
 "   -   Make it possible to show the context in the prompt
 "   -   Retain history across sessions
+"   -   Refactory history into an object
 
 " General-purpose support functions.
     " These were acquired directly from VimClojure
