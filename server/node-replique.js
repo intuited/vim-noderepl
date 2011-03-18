@@ -1,7 +1,6 @@
 // Snappy responses to requests for completion and evaluation.
 // TODO:
 // -    Context name should be included with responses.
-// -    There should be some way to create a uniquely-named context.
 // -    At some point it would be nice to add a way to delete contexts.
 // -    Transfer `console.log` calls over to some other logging mechanism.
 //      -   a verbose or debug option would be useful for this.
@@ -12,6 +11,12 @@
 //      rather than grouping by role and then request type.
 // -    Context creation seems to be wrapping the context in which it happens.
 //      This results in e.g. `writers`, `handlers`, `command` being included.
+// -    Separate socket interaction layer from REPL functionality
+// -    Remember why I didn't just use the core repl module in the first place
+//      -   I think this was partly because of its readline integration.
+//          However, webrepl seems to be able to use it successfully.
+//          Node commit ba80d4d8a9e6141c00fe60b6fb65983a7f7b8fd9
+//          ("Fixes non-raw REPL/Debugger on Posix.") may be relevant here.
 
 // Create a base context containing the default globals.
 // This is used to set the contents of newly created contexts.
@@ -354,6 +359,9 @@ net.createServer(function (stream) {
     // I *think* it just gets ignored,
     // but since the repl module just serves one context for all repls
     // it could be getting used as a context identifier in a problematic way.
+    //
+    // Anyway, this conjures up a `repl.REPLServer`-like object
+    // to handle completion.
     var fakeRepl = {
       commands: {},
       context: context
