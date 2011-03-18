@@ -29,11 +29,12 @@ endfunct
 " Don't do anything here.
 " The default uses |==|, which (unless 'equalprg' is set) invokes c-indenting.
 " That will do strange things to multiline object literals.
-" If we leave it alone and let autoindentation manage it, it's good enough.
+" If we leave it alone and let auto and smart indentation manage it,
+" it's good enough.
 " The only missing bit is that, even with 'smartindent' set,
 " initial closing braces don't cause dedentation.
-" This is because there's no way to leave the editor in insert mode
-" at the beginning of a new line.
+" This is because VimL doesn't provide a way to leave the editor in insert mode
+" after opening a new line.
 " TODO: find a JS addon that sets 'equalprg' to something useful.
 function! noderepl#Repl._ReformatContinuedLine()
 endfunction
