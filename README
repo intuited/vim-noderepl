@@ -139,6 +139,36 @@ Issues
         to both one of these and [optionally] the real console.
         Is there a package for this?
 
+-   At first glance, there may appear to be glitches
+    with respect to parsing and evaluation.
+    For example, entering ::
+        {two: 2}
+    will give the result ``2``.
+
+    This happens because the text is parsed as a block
+    containing a label and the literal "2".
+
+    This is not incorrect.
+
+    There have been workarounds in recent-ish commits on the node repo;
+    however, they introduce potentially more serious issues.
+
+    As of node commit feb77eab6563c849a99cf620c354d084faabc245 (2011-01-02),
+    the node REPL (not `node-replique`) will double-eval lines like ::
+        i++ && f
+    This is potentially a poor example,
+    and there may be more legitimate possibilities which could cause confusion.
+
+    Also, object literals which are given as the entirety of an expression
+    and include string keys, for example ::
+        {"two": 2}
+    will result in a SyntaxError.
+
+    These issues can be avoided by wrapping in parentheses
+    lines which consist entirely of object literals, e.g. ::
+        ({"two": 2})
+
+
 TODO
 ----
 
