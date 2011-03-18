@@ -1,3 +1,7 @@
+" Extends `repl#Repl` with node-specific functionality.
+" TODO:
+"   -   figure out what's going on with indentation
+
 " The path to the Python `poste.py` module,
 " relative to the location of this script.
 " Can also be given as an absolute path.
