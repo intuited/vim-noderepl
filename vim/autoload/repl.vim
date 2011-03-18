@@ -3,6 +3,7 @@
 "   -   Have NodeReplContext echo the context if no argument is provided
 "   -   Maybe rework command structure 
 "       so that `:Repl` can handle things like changing/displaying context
+"   -   Make it possible to show the context in the prompt
 
 " General-purpose support functions.
     " These were acquired directly from VimClojure
