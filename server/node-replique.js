@@ -303,7 +303,7 @@ net.createServer(function (stream) {
     console.log('evaluate called.');  //~~
     try {
       console.log('calling runInContext...');  //~~
-      value = Script.runInContext(expression, context);
+      value = Script.runInContext('(' + expression + ')', context);
       console.log('...runInContext returned value: ' + value);  //~~
     } catch (error) {
       // repl.js says "instanceof doesn't work across context switches."
