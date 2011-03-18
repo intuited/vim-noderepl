@@ -244,10 +244,26 @@
                 let self._editedHistory = copy(self._history)
                 call self.showPrompt()
             else
-                execute "normal! GA\<CR>x"
-                normal! ==x
-                startinsert!
+                call self._ContinueLine()
             endif
+        endfunction
+
+        " Handle the mechanics of continuing the command onto a new line.
+        " By default, a placeholder character is inserted
+        " and then self._ReformatContinuedLine is called to adjust indentation.
+        function! repl#Repl._ContinueLine()
+            execute "normal! GA\<CR>x"
+            call self._ReformatContinuedLine()
+            normal! x
+            startinsert!
+        endfunction
+
+        " Reformat a newly continued line.
+        " This hook is called after the line has been created
+        " and had the character 'x' inserted into it.
+        " It must leave the cursor in its starting location.
+        function! repl#Repl._ReformatContinuedLine()
+            normal! ==
         endfunction
 
         " Change the last REPL command to the one a:delta lines away.

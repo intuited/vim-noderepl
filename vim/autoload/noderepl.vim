@@ -16,7 +16,7 @@ let g:noderepl_connect = {}
 
 let noderepl#Repl = copy(repl#Repl)
 
-let noderepl#Repl._header = "node"
+let noderepl#Repl._header = "Node REPL"
 let noderepl#Repl._prompt = "node=>"
 let noderepl#Repl._default_context = 'vim-noderepl'
 
@@ -27,6 +27,18 @@ funct! noderepl#Repl._SetFileType() dict
     setfiletype javascript
 endfunct
 
+
+" Don't do anything here.
+" The default uses |==|, which (unless 'equalprg' is set) invokes c-indenting.
+" That will do strange things to multiline object literals.
+" If we leave it alone and let autoindentation manage it, it's good enough.
+" The only missing bit is that, even with 'smartindent' set,
+" initial closing braces don't cause dedentation.
+" This is because there's no way to leave the editor in insert mode
+" at the beginning of a new line.
+" TODO: find a JS addon that sets 'equalprg' to something useful.
+function! noderepl#Repl._ReformatContinuedLine()
+endfunction
 
 " Methods which actually interact with the interpreter
     " Communicates with the running node instance
