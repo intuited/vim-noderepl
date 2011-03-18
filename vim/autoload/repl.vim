@@ -6,6 +6,8 @@
 "   -   Make it possible to show the context in the prompt
 "   -   Retain history across sessions
 "   -   Refactory history into an object
+"   -   Make it possible to hit ENTER at an empty prompt
+"       to start on the next line.
 
 " General-purpose support functions.
     " These were acquired directly from VimClojure
