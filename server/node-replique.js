@@ -303,8 +303,28 @@ net.createServer(function (stream) {
     console.log('evaluate called.');  //~~
     try {
       console.log('calling runInContext...');  //~~
-      value = Script.runInContext('(' + expression + ')', context);
-      console.log('...runInContext returned value: ' + value);  //~~
+
+      // We try to evaluate both expressions e.g.
+      //  '{ a : 1 }'
+      // and statements e.g.
+      //  'for (var i = 0; i < 10; i++) console.log(i);'
+      try {
+        // First we attempt to eval as expression with parens.
+        // This catches '{a : 1}' properly.
+        value = Script.runInContext('(' + expression + ')', context);
+        console.log('...runInContext as expression returned value: ' + value);  //~~
+      } catch (error)  {
+        console.log('...exception [' + error.constructor.name + '] caught...')
+        if (error && error.constructor
+                  && error.constructor.name === "SyntaxError") {
+          console.log('...retrying as statement...')
+          // Now as statement without parens.
+          value = Script.runInContext(expression, context);
+          console.log('...runInContext as statement returned value: ' + value);  //~~
+        } else {
+          throw error;
+        }
+      }
     } catch (error) {
       // repl.js says "instanceof doesn't work across context switches."
       if (error && error.constructor
