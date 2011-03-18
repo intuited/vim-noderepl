@@ -313,6 +313,11 @@ net.createServer(function (stream) {
         // This catches '{a : 1}' properly.
         value = Script.runInContext('(' + expression + ')', context);
         console.log('...runInContext as expression returned value: ' + value);  //~~
+        // Special case for named functions.
+        // So any expression with a function result gets evaled twice.
+        // This means that expressions like `i++ && f` will not work correctly.
+        // This behaviour is also evident in the node repl proper.
+        if (typeof value === 'function') throw SyntaxError()
       } catch (error)  {
         console.log('...exception [' + error.constructor.name + '] caught...')
         if (error && error.constructor
