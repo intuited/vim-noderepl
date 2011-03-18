@@ -51,10 +51,6 @@ endfunction
     " Return:
     "   The name of the created context.
     funct! noderepl#Repl._GetReplContext(name, unique) dict
-        " TODO: implement this stub
-        "       after writing node code to create uniquely named contexts.
-        " TODO: It should also be possible to select a context
-        "       when executing :NodeRepl.
         let connect_info = extend(copy(g:noderepl_connect), self.connect_info)
 
         if a:unique
