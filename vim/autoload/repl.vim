@@ -4,8 +4,7 @@
 "   -   Maybe rework command structure 
 "       so that `:Repl` can handle things like changing/displaying context
 "   -   Make it possible to show the context in the prompt
-"   -   Retain partially-edited commands at the beginning of the history
-"       until a command is entered
+"   -   Retain history across sessions
 
 " General-purpose support functions.
     " These were acquired directly from VimClojure
@@ -82,8 +81,6 @@
     " TODO: lose the initial underscores on these properties.
     let repl#Repl._header = 'REPL'
     let repl#Repl._prompt = 'REPL=>'
-    let repl#Repl._history = ['']
-    let repl#Repl._historyDepth = 0
     let repl#Repl._default_context = 'default'
 
 
@@ -163,8 +160,12 @@
             let self.connect_info = {}
         endfunct
 
-        " Set up the history-related key mappings.
+        " Set up the history-related key mappings and properties
         funct! repl#Repl._SetupHistory() dict
+            let self._history = ['']
+            " Edited history is reset each time a command is entered.
+            let self._editedHistory = ['']
+            let self._historyDepth = 0
             if !hasmapto("<Plug>ReplEnterHook")
                 imap <buffer> <silent> <CR> <Plug>ReplEnterHook
             endif
@@ -235,8 +236,9 @@
                 call self.showText(result)
 
                 let self._historyDepth = 0
-                " Keep the empty item as the beginning of the history
                 call insert(self._history, cmd, 1)
+                " Reset the editable history to the actual history.
+                let self._editedHistory = copy(self._history)
                 call self.showPrompt()
             else
                 execute "normal! GA\<CR>x"
@@ -249,10 +251,14 @@
         function! repl#Repl._CycleHistory(delta)
             let depth = self._historyDepth + a:delta
             let depth = max([depth, 0])
-            let depth = min([depth, len(self._history) - 1])
+            let depth = min([depth, len(self._editedHistory) - 1])
 
             if self._historyDepth != depth
-                let cmd = self._history[depth]
+                " Retain partially-edited commands.
+                " These are reset to the actual history when a command is entered.
+                let self._editedHistory[self._historyDepth] = self.getCommand()
+
+                let cmd = self._editedHistory[depth]
                 let self._historyDepth = depth
 
                 call self.deleteLast()
