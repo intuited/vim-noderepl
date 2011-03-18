@@ -139,21 +139,6 @@ Issues
         to both one of these and [optionally] the real console.
         Is there a package for this?
 
--   There are some weird glitches with respect to parsing and evaluation.
-    For example, entering ::
-        {two: 2}
-    will result in an evaluation of ``2``.
-    Also, object literals which are given as the entirety of an expression
-    and include string keys, for example ::
-        {"two": 2}
-    will result in a SyntaxError.
-
-    These issues were present in the regular node REPL
-    until I moved from version 3.something to version 4.2.
-
-    `noderepl` and `node-replique` do not attempt to correct these problems,
-    or whatever they are.
-
 TODO
 ----
 
