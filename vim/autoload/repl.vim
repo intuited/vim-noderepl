@@ -4,6 +4,8 @@
 "   -   Maybe rework command structure 
 "       so that `:Repl` can handle things like changing/displaying context
 "   -   Make it possible to show the context in the prompt
+"   -   Retain partially-edited commands at the beginning of the history
+"       until a command is entered
 
 " General-purpose support functions.
     " These were acquired directly from VimClojure
@@ -80,7 +82,7 @@
     " TODO: lose the initial underscores on these properties.
     let repl#Repl._header = 'REPL'
     let repl#Repl._prompt = 'REPL=>'
-    let repl#Repl._history = []
+    let repl#Repl._history = ['']
     let repl#Repl._historyDepth = 0
     let repl#Repl._default_context = 'default'
 
@@ -233,7 +235,8 @@
                 call self.showText(result)
 
                 let self._historyDepth = 0
-                let self._history = [cmd] + self._history
+                " Keep the empty item as the beginning of the history
+                call insert(self._history, cmd, 1)
                 call self.showPrompt()
             else
                 execute "normal! GA\<CR>x"
@@ -242,41 +245,30 @@
             endif
         endfunction
 
-        " Handles cycling back in the history, normally via CTRL-UP.
-        function! repl#Repl.upHistory() dict
-            let histLen = len(self._history)
-            let histDepth = self._historyDepth
+        " Change the last REPL command to the one a:delta lines away.
+        function! repl#Repl._CycleHistory(delta)
+            let depth = self._historyDepth + a:delta
+            let depth = max([depth, 0])
+            let depth = min([depth, len(self._history) - 1])
 
-            if histLen > 0 && histLen > histDepth
-                let cmd = self._history[histDepth]
-                let self._historyDepth = histDepth + 1
+            if self._historyDepth != depth
+                let cmd = self._history[depth]
+                let self._historyDepth = depth
 
                 call self.deleteLast()
-
                 call self.showText(self._prompt . " " . cmd)
+                normal G$
             endif
+        endfunction
 
-            normal! G$
+        " Handles cycling back in the history, normally via CTRL-UP.
+        function! repl#Repl.upHistory() dict
+            call self._CycleHistory(1)
         endfunction
 
         " Handles cycling forward in the history, normally via CTRL-DOWN.
         function! repl#Repl.downHistory() dict
-            let histLen = len(self._history)
-            let histDepth = self._historyDepth
-
-            if histDepth > 0 && histLen > 0
-                let self._historyDepth = histDepth - 1
-                let cmd = self._history[self._historyDepth]
-
-                call self.deleteLast()
-
-                call self.showText(self._prompt . " " . cmd)
-            elseif histDepth == 0
-                call self.deleteLast()
-                call self.showText(self._prompt . " ")
-            endif
-
-            normal! G$
+            call self._CycleHistory(-1)
         endfunction
 
 
