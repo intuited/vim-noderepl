@@ -323,14 +323,18 @@
             startinsert!
         endfunction
 
+        " Build a regular expression which will find the prompt
+        " regardless of vim's case and magic settings
+        " Terminating space is optional because the user may have deleted it.
+        function! repl#Repl.BuildPromptRE(prompt)
+            return '\V\C\^' . escape(self._prompt, '\') . '\s\*'
+        endfunction
+
         " Parse the command out of the text at the cursor position
         function! repl#Repl.getCommand() dict
-            let ln = line("$")
+            let prompt_re = self.BuildPromptRE(self._prompt)
 
-            " XXX: The prompt needs to be escaped.
-            while getline(ln) !~ "^" . self._prompt && ln > 0
-                let ln = ln - 1
-            endwhile
+            let ln = search(prompt_re, 'bcnW')
 
             " Special Case: User deleted Prompt by accident. Insert a new one.
             if ln == 0
@@ -340,23 +344,16 @@
 
             let cmd = repl#Yank("l", ln . "," . line("$") . "yank l")
 
-            " XXX: The prompt needs to be escaped.
-            let cmd = substitute(cmd, "^" . self._prompt . "\\s*", "", "")
+            let cmd = substitute(cmd, prompt_re, "", "")
             let cmd = substitute(cmd, "\n$", "", "")
             return cmd
         endfunction
 
-        " Delete the last command in the buffer
+        " Delete the last command in the buffer, including its prompt
         function! repl#Repl.deleteLast() dict
             normal! G
-
-            " XXX: This could hit an endless loop?
-            " TODO: Escape `self._prompt`
-            while getline("$") !~ self._prompt
-                normal! dd
-            endwhile
-
-            normal! dd
+            let ln = search(self.BuildPromptRE(self._prompt), 'bcW')
+            exec ln . ',$delete'
         endfunction
 
 
