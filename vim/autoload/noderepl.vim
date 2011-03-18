@@ -72,28 +72,11 @@ endfunct
     funct! noderepl#Repl._completeList(base) dict
         let connect_info = extend(copy(g:noderepl_connect), self.connect_info)
 
-        " python vim.command('return {0}'.format(str(["one", "two", "three"])))
-        python base = vim.eval('a:base')
-        python ci = vim.eval('l:connect_info')
-        python cx = vim.eval('self._context')
-        " TODO: sort out the lingering debug cases below
         python vim.command("return {0}".format(
                \ NodeRepl.complete(
                  \ vim.eval('a:base'),
                  \ vim.eval('l:connect_info'),
                  \ vim.eval('self._context'))))
-        ""__  works
-        python vim.command("return {0}".format(
-               \ [
-                 \ vim.eval('a:base'),
-                 \ vim.eval('l:connect_info'),
-                 \ vim.eval('self._context')]))
-        ""__  should be this; doesn't work
-        python vim.command("return {0}".format(
-                           \ NodeRepl.complete(
-                             \ vim.eval('a:base'),
-                             \ vim.eval('l:connect_info'),
-                             \ context=vim.eval('self._context'))))
     endfunct
 
 
