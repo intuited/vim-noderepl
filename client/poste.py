@@ -6,6 +6,22 @@ import logging
 
 post_log = logging.getLogger('post')
 
+
+ENCODING = 'utf_8'
+
+def _string_encode(string):
+    """Encodes `string` using the selected encoding.
+
+    Uses the normalized value of the ENCODING module variable.
+    This defaults to UTF-8.
+
+    This function, and the ENCODING value itself,
+    determine the character encoding which will be used to convey server responses.
+    """
+    import encodings
+    return encodings.search_function(ENCODING).encode(string)[0]
+
+
 class Poste(object):
     attribs = ['command', 'code', 'context']
     def __init__(self, code, context=None):
@@ -55,7 +71,7 @@ class _Replique(object):
     def __repr__(self):
         return "{0}({1})".format(self.__class__.__name__, self.replique)
     def __str__(self):
-        return str(self.replique[self.result])
+        return _string_encode(self.replique[self.result])
 
 class Value(_Replique):
     result = u'value'
