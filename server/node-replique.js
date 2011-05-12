@@ -79,7 +79,7 @@ net.createServer(function (stream) {
    *       of prototypes derived from using `Object.create`.
    */
   function derive(base, additions) {
-    var derived = Object.create(base);
+    var attr, derived = Object.create(base);
     for (attr in additions) {
       derived[attr] = additions[attr];
     }
@@ -94,7 +94,7 @@ net.createServer(function (stream) {
   function bind(obj, method) {
     return function () {
       return method.apply(obj, arguments);
-    }
+    };
   }
 
 
@@ -127,14 +127,14 @@ net.createServer(function (stream) {
        * Based on repl.js's `resetContext` function.
        */
       function () {
-        var newContext = Script.createContext();
+        var i, newContext = Script.createContext();
 
         // Add all the globals which existed at this module's initialization
-        for (var i in baseGlobals) newContext[i] = baseGlobals[i];
+        for (i in baseGlobals) newContext[i] = baseGlobals[i];
 
         // Make the node-replique context available from within its REPLs.
-        newContext.nodeReplique = {}
-        for (var i in global) newContext.nodeReplique[i] = global[i];
+        newContext.nodeReplique = {};
+        for (i in global) newContext.nodeReplique[i] = global[i];
 
         newContext.module = module;
         newContext.require = require;
@@ -147,7 +147,7 @@ net.createServer(function (stream) {
        * `name` defaults to "default".
        */
       function (name) {
-        var name = name || "default";
+        name = name || "default";
         if (!this.contexts[name]) {
           this.contexts[name] = this.createContext();
         } else if (!this.contexts.hasOwnProperty(name)) {
@@ -172,8 +172,8 @@ net.createServer(function (stream) {
         this.contexts[contextName] = this.createContext(contextName);
         return contextName;
       }
-  }
-  contexts = new Contexts()
+  };
+  contexts = new Contexts();
 
 
 /**
@@ -209,7 +209,7 @@ net.createServer(function (stream) {
    * How can I arrange for the constructor to be included in the derivation?
    */
   function Writer(stream) {
-    stream.write('testing in Writer\n') //~~
+    stream.write('testing in Writer\n'); //~~
     this.stream = stream;
   }
   Writer.prototype = {
@@ -232,7 +232,7 @@ net.createServer(function (stream) {
        * The default formatter of error messages.
        */
       function (message) { return message + "\n"; },
-  }
+  };
 
   /**
    * Implements the protocol for responses to eval requests.
@@ -303,7 +303,7 @@ net.createServer(function (stream) {
    * A method of `routes` is called to process the result or error state.
    */
   function evaluate(context, routes, expression) {
-    var value, error;
+    var value;
 
     console.log('evaluate called.');  //~~
     try {
