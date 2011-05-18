@@ -1,7 +1,7 @@
-// Snappy responses to requests for completion and evaluation.
 // TODO:
 // -    Context name should be included with responses.
 // -    At some point it would be nice to add a way to delete contexts.
+//      -   This could cause problematic interactions with createUniqueContext.
 // -    Transfer `console.log` calls over to some other logging mechanism.
 //      -   a verbose or debug option would be useful for this.
 // -    The server should be an object that can be instantiated
@@ -17,6 +17,8 @@
 //          However, webrepl seems to be able to use it successfully.
 //          Node commit ba80d4d8a9e6141c00fe60b6fb65983a7f7b8fd9
 //          ("Fixes non-raw REPL/Debugger on Posix.") may be relevant here.
+//      -   Core repl doesn't provide context-switching functionality.
+//      -   Core repl seems to be designed to output the prompt.
 
 // Create a base context containing the default globals.
 // This is used to set the contents of newly created contexts.
