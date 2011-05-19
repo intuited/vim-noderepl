@@ -82,7 +82,7 @@ Context.prototype.evaluate = function(expression) {
     }
   }
   return new Success(value);
-}
+};
 
 /**
  *  Provide completion for `expression` in this context.
@@ -107,10 +107,10 @@ Context.prototype.complete = function(expression) {
   };
   var result = repl.REPLServer.prototype.complete.call(fakeRepl, expression);
   return { completions: result[0], completed: result[1] };
-}
+};
 
 
-exports.Context = Context
+exports.Context = Context;
 
 
 if (!module.parent) {
