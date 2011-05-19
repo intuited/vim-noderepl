@@ -11,9 +11,23 @@
 var vm = require('vm');
 var repl = require('repl');
 
-function stub() {
-  console.log('A stub was called.');
+
+/**
+ * Types for evaluation results
+ */
+function Success(value) {
+  this.result = 'success';
+  this.value = value;
 }
+function Error(error) {
+  this.result = 'error';
+  this.value = error.stack || error.toString();
+}
+function SyntaxError(error) {
+  this.result = 'syntaxError';
+  this.value = error;
+}
+
 
 /**
  * Create a base context containing the default globals.
@@ -24,6 +38,7 @@ var baseContext = (function () {
   for (var e in global) context[e] = global[e]; 
   return context;
 })();
+
 
 /**
  * A context for evaluation and completion.
@@ -46,70 +61,54 @@ function Context() {
   this.context = newContext;
 }
 
-/**
- * Types for evaluation results
- */
-function Success(value) {
-  this.result = 'success';
-  this.value = value;
-}
-function Error(error) {
-  this.result = 'error';
-  this.value = error.stack || error.toString();
-}
-function SyntaxError(error) {
-  this.result = 'syntaxError';
-  this.value = error;
-}
-
-
-/**
- *  Evaluate `expression` in this context.
- *  Returns a Success, Error, or SyntaxError object.
- *  These types all have a `result` attribute, which indicates their type,
- *  and a `value` attribute, which holds their value or information.
- */
-Context.prototype.evaluate = function(expression) {
-  try {
-    value = vm.runInContext(expression, this.context);
-  } catch (error) {
-    // repl.js says "instanceof doesn't work across context switches."
-    if (error && error.constructor
-              && error.constructor.name === "SyntaxError")
-    {
-      return new SyntaxError(error);
-    } else {
-      return new Error(error);
+Context.prototype = {
+  /**
+   *  Evaluate `expression` in this context.
+   *  Returns a Success, Error, or SyntaxError object.
+   *  These types all have a `result` attribute, which indicates their type,
+   *  and a `value` attribute, which holds their value or information.
+   */
+  evaluate: function(expression) {
+    try {
+      value = vm.runInContext(expression, this.context);
+    } catch (error) {
+      // repl.js says "instanceof doesn't work across context switches."
+      if (error && error.constructor
+                && error.constructor.name === "SyntaxError")
+      {
+        return new SyntaxError(error);
+      } else {
+        return new Error(error);
+      }
     }
-  }
-  return new Success(value);
-};
+    return new Success(value);
+  },
 
-/**
- *  Provide completion for `expression` in this context.
- *  Returns an object containing
- *    completions: an array of completions for `expression`
- *    completed: the substring on which completion was performed
- */
-Context.prototype.complete = function(expression) {
-  // Here I'm slightly worried because I don't understand why
-  // repl.REPLServer.prototype.complete passes "repl"
-  // as a third parameter to Script.runInContext.
-  //
-  // I *think* it just gets ignored,
-  // but since the repl module just serves one context for all repls
-  // it could be getting used as a context identifier in a problematic way.
-  //
-  // Anyway, this conjures up a `repl.REPLServer`-like object
-  // to handle completion.
-  var fakeRepl = {
-    commands: {},
-    context: this.context
-  };
-  var result = repl.REPLServer.prototype.complete.call(fakeRepl, expression);
-  return { completions: result[0], completed: result[1] };
+  /**
+   *  Provide completion for `expression` in this context.
+   *  Returns an object containing
+   *    completions: an array of completions for `expression`
+   *    completed: the substring on which completion was performed
+   */
+  complete: function(expression) {
+    // Here I'm slightly worried because I don't understand why
+    // repl.REPLServer.prototype.complete passes "repl"
+    // as a third parameter to Script.runInContext.
+    //
+    // I *think* it just gets ignored,
+    // but since the repl module just serves one context for all repls
+    // it could be getting used as a context identifier in a problematic way.
+    //
+    // Anyway, this conjures up a `repl.REPLServer`-like object
+    // to handle completion.
+    var fakeRepl = {
+      commands: {},
+      context: this.context
+    };
+    var result = repl.REPLServer.prototype.complete.call(fakeRepl, expression);
+    return { completions: result[0], completed: result[1] };
+  },
 };
-
 
 exports.Context = Context;
 
