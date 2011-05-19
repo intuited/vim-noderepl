@@ -1,4 +1,5 @@
 // Snappy responses to requests for completion and evaluation.
+//
 // This module doesn't really do much other than organize existing code.
 // Most of its work is done by node's builtin repl module.
 // It provides the ability to maintain a set of evaluation contexts
@@ -8,25 +9,29 @@
 // If this file is run as a script, that is what will happen.
 
 
+// Used for evaluation
 var vm = require('vm');
+// Used for completion
 var repl = require('repl');
 
 
 /**
  * Types for evaluation results
  */
-function Success(value) {
-  this.result = 'success';
-  this.value = value;
-}
-function Error(error) {
-  this.result = 'error';
-  this.value = error.stack || error.toString();
-}
-function SyntaxError(error) {
-  this.result = 'syntaxError';
-  this.value = error;
-}
+var results = {
+  Success: function Success(value) {
+    this.result = 'success';
+    this.value = value;
+  },
+  Error: function Error(error) {
+    this.result = 'error';
+    this.value = error.stack || error.toString();
+  },
+  SyntaxError: function SyntaxError(error) {
+    this.result = 'syntaxError';
+    this.value = error;
+  },
+};
 
 
 /**
@@ -76,12 +81,12 @@ Context.prototype = {
       if (error && error.constructor
                 && error.constructor.name === "SyntaxError")
       {
-        return new SyntaxError(error);
+        return new results.SyntaxError(error);
       } else {
-        return new Error(error);
+        return new results.Error(error);
       }
     }
-    return new Success(value);
+    return new results.Success(value);
   },
 
   /**
