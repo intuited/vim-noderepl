@@ -13,8 +13,8 @@ exports['Context functionality'] = nodeunit.testCase({
     },
 
     'basic completion': function (test) {
-        test.equals(this.context.complete('Str'), ['String']);
-        test.equals(4, 6);
+        test.equals(this.context.complete('Str').completions[0], 'String');
+        test.equals(this.context.complete('Str').completions.length, 1);
         test.done();
     },
 });
