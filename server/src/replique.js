@@ -65,8 +65,9 @@ function SyntaxError(error) {
 
 /**
  *  Evaluate `expression` in this context.
- *  Returns an object whose single key indicates the result type:
- *    'value', 'error', or 'syntaxError'.
+ *  Returns a Success, Error, or SyntaxError object.
+ *  These types all have a `result` attribute, which indicates their type,
+ *  and a `value` attribute, which holds their value or information.
  */
 Context.prototype.evaluate = function(expression) {
   try {
