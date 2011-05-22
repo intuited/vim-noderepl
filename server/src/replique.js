@@ -14,6 +14,9 @@ var vm = require('vm');
 // Used for completion
 var repl = require('repl');
 
+var net = require('net');
+var json = require('json');
+
 
 /**
  * Types for evaluation results
@@ -73,9 +76,10 @@ Context.prototype = {
    *  These types all have a `result` attribute, which indicates their type,
    *  and a `value` attribute, which holds their value or information.
    */
-  evaluate: function(expression) {
+  evaluate: function evaluate(expression) {
     try {
       value = vm.runInContext(expression, this.context);
+      console.log('evaluate: runInContext returned value: ' + value);  //~~
     } catch (error) {
       // repl.js says "instanceof doesn't work across context switches."
       if (error && error.constructor
@@ -95,7 +99,7 @@ Context.prototype = {
    *    completions: an array of completions for `expression`
    *    completed: the substring on which completion was performed
    */
-  complete: function(expression) {
+  complete: function complete(expression) {
     // Here I'm slightly worried because I don't understand why
     // repl.REPLServer.prototype.complete passes "repl"
     // as a third parameter to Script.runInContext.
@@ -116,6 +120,185 @@ Context.prototype = {
 };
 
 exports.Context = Context;
+
+
+/**
+ * Collection of contexts available to a server.
+ * Unique context names can be requested.
+ * A unique context name consists of an arbitrary prefix ending in a non-digit,
+ * followed by a numeric ID.
+ * The ID will be higher than that of any context name with the same prefix
+ * yet used.
+ * Contexts implicitly created (autovivified) by `.get` will increase the ID
+ * if their name ends with one or more digits.
+ */
+function Contexts() {
+  // Stores the contexts.  For internal use only.
+  this.contexts = {};
+  // Tracks the highest numeric suffix used for unique contexts.
+  this.uniqueIDs = {};
+}
+Contexts.prototype = {
+  /**
+   * Return the context with the given name, or a new one.
+   * `contextName` defaults to "default".
+   */
+  get: function (contextName) {
+    var match;
+
+    // Avoid conflicts with contents of Object.prototype.
+    contextName = ':' + (contextName === undefined ? "default" : contextName);
+
+    if (this.contexts[contextName] === undefined) {
+      this.contexts[contextName] = Context();
+
+      // Raise the ID suffix if appropriate.
+      match = /^(.*?)(\d+)$/.exec(contextName);
+      if (match && (this.uniqueIDs[match[1]] === undefined ||
+                    this.uniqueIDs[match[1]] < match[2])) {
+        this.uniqueIDs[match[1]] = match[2];
+      }
+    }
+    return this.contexts[contextName];
+  },
+
+  /**
+   * Creates a new uniquely-numbered context using the given prefix.
+   * The context is stored in this object, and the name is returned.
+   * The prefix cannot end in a number.
+   * The prefix defaults to the empty string.
+   * The name of the new context is returned.
+   */
+  uniqueContext: function (prefix) {
+    if (/\d$/.exec(prefix)) {
+      throw Error('Unique context prefix ' + JSON.stringify(prefix) +
+                  'cannot end in a number.');
+    }
+
+    prefix = ':' + (prefix || '');
+
+    var id = this.uniqueIDs[prefix] ? this.uniqueIDs[prefix] + 1 : 1;
+    var contextName = prefix + id;
+    var context = Context();
+
+    this.uniqueIDs[prefix] = id;
+    this.contexts[contextName] = context;
+    return contextName;
+  },
+};
+
+exports.Contexts = Contexts;
+
+
+/**
+ * A server for data requests.
+ * Usage consists of creating a server and making it listen:
+ *     server = Server();
+ *     server.listen(4994);
+ */
+function Server() {
+  this.contexts = Contexts();
+  this.server = net.createServer(this.onConnection.bind(this));
+  this.listen = server.listen.bind(server);
+}
+Server.prototype = {
+  onConnection: function onConnection(stream) {
+    stream.setEncoding('utf8');
+
+    var received = {text: ''};
+    stream.on('data', this.onData.bind(this, stream, received));
+
+    stream.on('end', function () {
+      stream.end();
+    });
+  },
+
+  /**
+   * Accumulate code until a full, valid JSON-format request arrives,
+   * then attempt to handle it.
+   */
+  onData: function onData(stream, received, chunk) {
+    received.text += chunk;
+    try {
+      received.request = JSON.parse(received.text);
+    } catch (e) {
+      // This means the JSON was incorrectly formed
+      // and is presumably incomplete.
+      // We go back to waiting for another chunk.
+      // TODO: check if there are any errors possible here
+      //       which do not indicate incomplete JSON.
+      console.log(util.inspect(['partial request', received.text]));  //~~
+      return;
+    }
+    received.text = '';
+    // TODO: go through and actually make sure that exceptions
+    //       can't bubble up here.
+    this.reply(received.request, stream);
+  },
+
+  /**
+   * Replies to a parsed request.
+   * The top-level object contains
+   * -   command: "evaluate", "complete", or "uniqueContext".
+   * -   context (optional): name of the evaluation context.  Created on demand.
+   * -   code: the string to be evaled or completed.
+   */
+  reply: function reply(request, stream) {
+    var command;
+
+    console.log(util.inspect(['parsed request', request]));  //~~
+    if (this.isValidCommand(request.command)) {
+      return stream.write(json.encode(this[request.command](request)));
+    }
+  },
+
+  /**
+   * Handlers for the three types of commands.
+   * The method called is determined
+   * by the `command` attribute of the decoded request.
+   * Each method's return value is an object with
+   * a `command` value equal to the method name
+   * and other attributes which depend on the command.
+   */
+
+  evaluate: function (request) {
+    var context = this.contexts.get(request.context);
+    var result = context.evaluate(request.code);
+    if (result instanceof results.Success) {
+      result.value = this.formatValue(result.value);
+    } else {
+      result.value = this.formatMessage(result.value);
+    }
+    result.command = 'evaluate';
+    return result;
+  },
+  complete: function (request) {
+    var context = this.contexts.get(request.context);
+    result = context.complete(request.code);
+    result.command = 'completions';
+    return result;
+  },
+  uniqueContext: function (request) {
+    var contextName = this.contexts.uniqueContext(request.context);
+    return {
+      command: 'newContext',
+      context: contextName
+    };
+  },
+    
+  /**
+   * Formatter for successful evaluations.
+   */
+  formatValue: function (value) { return util.inspect(value) + "\n"; },
+  /**
+   * Formatter for errors.
+   */
+  formatMessage: function (message) { return message + "\n"; },
+
+  isValidCommand: function isValidCommand(command) {
+    return (['evaluate', 'complete', 'uniqueContext'].indexOf(command) > -1;
+  },
+};
 
 
 if (!module.parent) {
