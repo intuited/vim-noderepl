@@ -95,9 +95,9 @@ exports['use of Contexts objects'] = nodeunit.testCase({
         test.done();
     },
     'getting the same context twice': function (test) {
-        var context = this.contexts.get('test');
-        context.evaluate('var testvar = 1;');
-        test.strictEqual(this.contexts.get('test').evaluate('testvar'), 1);
+        this.contexts.get('test').evaluate('var testvar = 1;');
+        test.strictEqual(this.contexts.get('test').evaluate('testvar').value,
+                         1);
         test.done();
     },
     'unique contexts with empty prefix': function (test) {
