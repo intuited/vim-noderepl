@@ -15,7 +15,7 @@ var vm = require('vm');
 var repl = require('repl');
 
 var net = require('net');
-var json = require('json');
+var util = require('util');
 
 
 /**
@@ -42,10 +42,10 @@ var results = {
  * This is used to initialize newly created contexts.
  */
 var baseContext = (function () {
-  var context = {};
-  for (var e in global) context[e] = global[e]; 
+  var e, context = {};
+  for (e in global) context[e] = global[e]; 
   return context;
-})();
+}());
 
 
 /**
@@ -68,7 +68,6 @@ function Context() {
   newContext.global.global = newContext;
   this.context = newContext;
 }
-
 Context.prototype = {
   /**
    *  Evaluate `expression` in this context.
@@ -77,6 +76,8 @@ Context.prototype = {
    *  and a `value` attribute, which holds their value or information.
    */
   evaluate: function evaluate(expression) {
+    var value;
+
     try {
       value = vm.runInContext(expression, this.context);
       console.log('evaluate: runInContext returned value: ' + value);  //~~
@@ -118,7 +119,6 @@ Context.prototype = {
     return { completions: result[0], completed: result[1] };
   },
 };
-
 exports.Context = Context;
 
 
@@ -148,9 +148,10 @@ Contexts.prototype = {
 
     // Avoid conflicts with contents of Object.prototype.
     contextName = ':' + (contextName === undefined ? "default" : contextName);
+    console.log('contextName: ' + contextName);
 
     if (this.contexts[contextName] === undefined) {
-      this.contexts[contextName] = Context();
+      this.contexts[contextName] = new Context();
 
       // Raise the ID suffix if appropriate.
       match = /^(.*?)(\d+)$/.exec(contextName);
@@ -171,22 +172,23 @@ Contexts.prototype = {
    */
   uniqueContext: function (prefix) {
     if (/\d$/.exec(prefix)) {
-      throw Error('Unique context prefix ' + JSON.stringify(prefix) +
-                  'cannot end in a number.');
+      throw new Error('Unique context prefix ' + JSON.stringify(prefix) +
+                      'cannot end in a number.');
     }
 
     prefix = ':' + (prefix || '');
 
-    var id = this.uniqueIDs[prefix] ? this.uniqueIDs[prefix] + 1 : 1;
+    var id = this.uniqueIDs[prefix] ? Number(this.uniqueIDs[prefix]) + 1 : 1;
     var contextName = prefix + id;
-    var context = Context();
+    var context = new Context();
 
     this.uniqueIDs[prefix] = id;
     this.contexts[contextName] = context;
-    return contextName;
+
+    // Strip the initial ':' and return.
+    return contextName.substr(1);
   },
 };
-
 exports.Contexts = Contexts;
 
 
@@ -197,10 +199,11 @@ exports.Contexts = Contexts;
  *     server.listen(4994);
  */
 function Server() {
-  this.contexts = Contexts();
+  this.contexts = new Contexts();
   this.server = net.createServer(this.onConnection.bind(this));
-  this.listen = server.listen.bind(server);
+  this.listen = this.server.listen.bind(this.server);
 }
+exports.Server = Server;
 Server.prototype = {
   onConnection: function onConnection(stream) {
     stream.setEncoding('utf8');
@@ -248,7 +251,7 @@ Server.prototype = {
 
     console.log(util.inspect(['parsed request', request]));  //~~
     if (this.isValidCommand(request.command)) {
-      return stream.write(json.encode(this[request.command](request)));
+      return stream.write(JSON.stringify(this[request.command](request)));
     }
   },
 
@@ -274,7 +277,7 @@ Server.prototype = {
   },
   complete: function (request) {
     var context = this.contexts.get(request.context);
-    result = context.complete(request.code);
+    var result = context.complete(request.code);
     result.command = 'completions';
     return result;
   },
@@ -296,7 +299,7 @@ Server.prototype = {
   formatMessage: function (message) { return message + "\n"; },
 
   isValidCommand: function isValidCommand(command) {
-    return (['evaluate', 'complete', 'uniqueContext'].indexOf(command) > -1;
+    return (['evaluate', 'complete', 'uniqueContext'].indexOf(command) > -1);
   },
 };
 
