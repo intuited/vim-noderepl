@@ -139,4 +139,4 @@ exports['use of Contexts objects'] = nodeunit.testCase({
         test.strictEqual(this.contexts.uniqueContext('test'), 'test7');
         test.done();
     },
-};
+});
