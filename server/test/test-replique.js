@@ -77,7 +77,7 @@ exports['Multiple context functionality'] = nodeunit.testCase({
     },
 });
 
-exports['Use of Contexts objects'] = nodeunit.testCase({
+exports['use of Contexts objects'] = nodeunit.testCase({
     setUp: function setUp(callback) {
         this.contexts = new replique.Contexts();
         this.console_log = console.log;
