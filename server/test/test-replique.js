@@ -4,6 +4,12 @@ var nodeunit = require('nodeunit'),
 exports['Single context functionality'] = nodeunit.testCase({
     setUp: function setUp(callback) {
         this.context = new replique.Context();
+        this.console_log = console.log;
+        console.log = function () {};
+        callback();
+    },
+    tearDown: function (callback) {
+        console.log = this.console_log;
         callback();
     },
 
@@ -47,6 +53,12 @@ exports['Multiple context functionality'] = nodeunit.testCase({
     setUp: function setUp(callback) {
         this.context1 = new replique.Context();
         this.context2 = new replique.Context();
+        this.console_log = console.log;
+        console.log = function () {};
+        callback();
+    },
+    tearDown: function (callback) {
+        console.log = this.console_log;
         callback();
     },
 
@@ -68,6 +80,13 @@ exports['Multiple context functionality'] = nodeunit.testCase({
 exports['Use of Contexts objects'] = nodeunit.testCase({
     setUp: function setUp(callback) {
         this.contexts = new replique.Contexts();
+        this.console_log = console.log;
+        console.log = function () {};
+        callback();
+    },
+    tearDown: function (callback) {
+        console.log = this.console_log;
+        callback();
     },
 
     'default context named default': function (test) {
