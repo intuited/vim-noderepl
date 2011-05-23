@@ -89,6 +89,11 @@ exports['use of Contexts objects'] = nodeunit.testCase({
         callback();
     },
 
+    'context autovivification': function (test) {
+        var context = this.contexts.get('test');
+        test.ok(context instanceof replique.Context);
+        test.done();
+    },
     'default context named default': function (test) {
         test.strictEqual(this.contexts.get(), this.contexts.get('default'));
         test.notEqual(this.contexts.get(), this.contexts.get('not default'));
