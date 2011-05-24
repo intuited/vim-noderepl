@@ -278,13 +278,13 @@ Server.prototype = {
   complete: function (request) {
     var context = this.contexts.get(request.context);
     var result = context.complete(request.code);
-    result.command = 'completions';
+    result.command = 'complete';
     return result;
   },
   uniqueContext: function (request) {
     var contextName = this.contexts.uniqueContext(request.context);
     return {
-      command: 'newContext',
+      command: 'uniqueContext',
       context: contextName
     };
   },

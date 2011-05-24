@@ -1,5 +1,14 @@
+require('sinon-nodeunit');
 var nodeunit = require('nodeunit'),
     replique = require('../src/replique');
+
+/**
+ * Tests run from lower- to higher-level functionality.
+ * Higher-level tests depend on lower-level functionality,
+ * so lower-level errors will cause upward-rippling test failures.
+ * I was going to write independent tests using mocks,
+ * but sinon-nodeunit didn't work for some reason.
+ */
 
 exports['Single context functionality'] = nodeunit.testCase({
     setUp: function setUp(callback) {
@@ -140,3 +149,97 @@ exports['use of Contexts objects'] = nodeunit.testCase({
         test.done();
     },
 });
+
+/**
+ * Tests from here on down test the server object.
+ * I'd like to put these in a separate test suite,
+ * but nodeunit doesn't seem to support this functionality.
+ */
+
+exports['server command validation'] = nodeunit.testCase({
+    setUp: function setUp(callback) {
+        var proto = replique.Server.prototype;
+        this.isValidCommand = proto.isValidCommand.bind(proto);
+        callback();
+    },
+
+    'valid commands': function (test) {
+        test.ok(this.isValidCommand('evaluate'));
+        test.ok(this.isValidCommand('complete'));
+        test.ok(this.isValidCommand('uniqueContext'));
+        test.done();
+    },
+    'invalid commands': function (test) {
+        test.ok(!this.isValidCommand('malkovich'));
+        test.ok(!this.isValidCommand('Evaluate'));
+        test.ok(!this.isValidCommand('COMPLETE'));
+        test.done();
+    },
+});
+
+exports['server command processing'] = nodeunit.testCase({
+    setUp: function setUp(callback) {
+        this.server = new replique.Server();
+        callback();
+    },
+
+    'evaluation': function (test) {
+        test.deepEqual(this.server.evaluate(
+            {command: 'evaluate', code: '1 + 1'}),
+            {command: 'evaluate', result: 'success', value: 2});
+        test.done();
+    },
+    'evaluation in specific contexts': function (test) {
+        this.server.evaluate({
+            command: 'evaluate', code: 'var i = 1;', context: 'one'});
+        test.deepEqual(this.server.evaluate(
+            {command: 'evaluate', code: 'i', context: 'one'}),
+            {command: 'evaluate', result: 'success', value: 1});
+        test.strictEqual(this.server.evaluate(
+            {command: 'evaluate', code: 'i', context: 'two'}).result,
+            'error');
+        test.done();
+    },
+    'syntax error evaluation': function (test) {
+        test.strictEqual(this.server.evaluate(
+            {command: 'evaluate', code: 'blargh.'}).result,
+            'syntaxError');
+        test.done();
+    },
+    'complete': function (test) {
+        test.deepEqual(this.server.complete(
+            {command: 'complete', code: 'Str'}),
+            {command: 'complete', completed: 'Str', completions: ['String']});
+        test.done();
+    },
+    'uniqueContext': function (test) {
+        test.deepEqual(this.server.uniqueContext(
+            {command: 'uniqueContext', context: 'test'}),
+            {command: 'uniqueContext', context: 'test1'});
+        test.deepEqual(this.server.uniqueContext(
+            {command: 'uniqueContext', context: 'test'}),
+            {command: 'uniqueContext', context: 'test2'});
+        test.done();
+    },
+});
+
+//~~  exports['command dispatch'] = nodeunit.testCase({
+//~~      setUp: function setUp(callback) {
+//~~          this.proto = replique.Server.prototype;
+//~~          callback();
+//~~      },
+//~~
+//~~      'evaluate': function (test) {
+//~~          var request = {command: 'evaluate'};
+//~~          var mock = test.mock(this.proto);
+//~~          var mockstream = test.mock({});
+//~~          console.log(test);
+//~~          mock.expects('evaluate').once().withExactArgs(request)
+//~~              .returns('test');
+//~~          mockstream.expects('write').once().withExactArgs('"test"');
+//~~          this.proto.reply(request, mockstream);
+//~~          mock.verify();
+//~~          mockstream.verify();
+//~~          test.done();
+//~~      },
+//~~  });
