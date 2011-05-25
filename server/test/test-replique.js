@@ -243,3 +243,5 @@ exports['server command processing'] = nodeunit.testCase({
 //~~          test.done();
 //~~      },
 //~~  });
+
+//  TODO: write tests for the server communications stuff.
