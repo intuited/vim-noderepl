@@ -87,7 +87,7 @@ endfunction
                \ NodeRepl.complete(
                  \ vim.eval('a:base'),
                  \ vim.eval('l:connect_info'),
-                 \ vim.eval('self._context'))))
+                 \ context=vim.eval('self._context'))))
     endfunct
 
 
@@ -115,8 +115,9 @@ class NodeRepl(object):
         to obtain the List [syntax_okay, result].
         See noderepl#Repl.runReplCommand for details.
         """
-        result = poste.post(poste.Evaluate(cmd, context=context), **post_args)
-        success = 0 if isinstance(result, poste.SynError) else 1
+        result = poste.post(poste.Postes.Evaluate(cmd, context=context),
+                            **post_args)
+        success = 0 if isinstance(result, poste.Repliques.SyntaxError) else 1
         result = NodeRepl.escape_string(str(result))
         return "[{0}, {1}]".format(success, result)
 
@@ -127,7 +128,7 @@ class NodeRepl(object):
         Returns a string which can be evaled in vim
         to obtain the list of completions.
         """
-        request = poste.Complete(base, context=context)
+        request = poste.Postes.Complete(base, context=context)
         completions = poste.post(request, **post_args)
         # TODO: guard against presence of "'" within completion strings.
         completions = map(str, completions)
@@ -135,6 +136,6 @@ class NodeRepl(object):
 
     @staticmethod
     def create_unique_context(prefix, post_args={}):
-        request = poste.UniqueContext("", context=prefix)
+        request = poste.Postes.UniqueContext("", context=prefix)
         return NodeRepl.escape_string(str(poste.post(request, **post_args)))
 EOF
