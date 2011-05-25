@@ -305,6 +305,7 @@ Server.prototype = {
 
 
 if (!module.parent) {
-  console.log('Supposed to be launching a REPL server here.');
-  // TODO: write this.
+  // TODO: make it possible to select a port or socket location
+  // from the command line.
+  new Server().listen(4994);
 }
