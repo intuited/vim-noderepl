@@ -96,7 +96,7 @@ class Repliques(object):
         attribs = {'command': 'complete'}
         display = 'completions'
         def __iter__(self):
-            return iter(self.replique[self.result])
+            return iter(self.replique['completions'])
 
     class NewContext(_Replique):
         """Indicates that a new context was successfully created."""
