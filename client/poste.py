@@ -3,6 +3,7 @@
 import json
 import socket
 import logging
+import encodings
 
 post_log = logging.getLogger('post')
 
@@ -18,7 +19,6 @@ def _string_encode(string):
     This function, and the ENCODING value itself,
     determine the character encoding which will be used to convey server responses.
     """
-    import encodings
     return encodings.search_function(ENCODING).encode(string)[0]
 
 
@@ -31,68 +31,77 @@ class Poste(object):
     def __str__(self):
         """The stringification can be sent directly to the server."""
         attribs = ((a, getattr(self, a, None)) for a in self.attribs)
-        attribs = dict(kv for kv in attribs if kv[1] is not None)
+        attribs = dict((key, value) for key, value in attribs
+                       if value is not None)
         return json.dumps(attribs)
 
-class Evaluate(Poste):
-    command = 'evaluate'
+class Postes(object):
+    """Container for request types."""
 
-class Complete(Poste):
-    command = 'complete'
+    class Evaluate(Poste):
+        command = 'evaluate'
 
-class UniqueContext(Poste):
-    """Used to request creation of a new, unique context.
+    class Complete(Poste):
+        command = 'complete'
 
-    The `context` parameter should contain the prefix for the new context.
-    """
-    command = 'uniqueContext'
+    class UniqueContext(Poste):
+        """Used to request creation of a new, unique context.
+
+        The `context` parameter should contain the prefix for the new context.
+        """
+        command = 'uniqueContext'
 
 
 def Replique(replique):
-    """Parse a server response into an object of that type."""
+    """Cast a parsed server response to an object of that type."""
     for t in _Replique.__subclasses__():
-        if t.result in replique:
+        if all(k in replique and v == replique[k]
+               for k, v in t.attribs.items()):
             return t(replique)
-    raise ValueError("No result key found in replique '{0}'"
-                    .format(replique))
+    raise ValueError("Unknown type for replique {0}".format(replique))
 
 class _Replique(object):
     """ABC of the various types of repliques.
 
     A response from the node server is type-cast
-    to one of this class's descendants.
-
-    The type-casting is done based on
-    the presence of a key in the JSON response
-    matching the value of the class's `result` attribute.
+    to one of this class's descendants
+    based on a match against its `attribs` attribute.
     """
     def __init__(self, replique):
         self.replique = replique
     def __repr__(self):
         return "{0}({1})".format(self.__class__.__name__, self.replique)
     def __str__(self):
-        return _string_encode(self.replique[self.result])
+        return _string_encode(str(self.replique[self.display]))
 
-class Value(_Replique):
-    result = u'value'
+class Repliques(object):
+    """Container for response types."""
 
-class SynError(_Replique):
-    """
-    Repliques of this type usually indicate that the passed code was incomplete.
-    """
-    result = 'syntaxError'
+    class Success(_Replique):
+        attribs = {'command': 'evaluate', 'result': 'success'}
+        display = 'value'
 
-class Error(_Replique):
-    result = 'error'
+    class SyntaxError(_Replique):
+        """
+        Repliques of this type usually indicate that the passed code was incomplete.
+        """
+        attribs = {'command': 'evaluate', 'result': 'syntaxError'}
+        display = 'message'
 
-class Completions(_Replique):
-    result = 'completions'
-    def __iter__(self):
-        return iter(self.replique[self.result])
+    class Error(_Replique):
+        attribs = {'command': 'evaluate', 'result': 'error'}
+        display = 'message'
 
-class NewContext(_Replique):
-    """Indicates that a new context was successfully created."""
-    result = 'newContext'
+    class Completions(_Replique):
+        attribs = {'command': 'complete'}
+        display = 'completions'
+        def __iter__(self):
+            return iter(self.replique[self.result])
+
+    class NewContext(_Replique):
+        """Indicates that a new context was successfully created."""
+        attribs = {'command': 'uniqueContext'}
+        display = 'context'
 
 
 def post(poste, host='localhost', port=4994, timeout=2):
@@ -136,7 +145,8 @@ def main():
         help="The code to execute the command on.")
     options = parser.parse_args()
 
-    PostType = {'evaluate': Evaluate, 'complete': Complete}[options.command]
+    PostType = {'evaluate': Postes.Evaluate,
+                'complete': Postes.Complete}[options.command]
     poste = PostType(options.code, context=options.context)
     print post(poste, host=options.server, port=options.port)
 
