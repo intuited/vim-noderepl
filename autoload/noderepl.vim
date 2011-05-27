@@ -4,7 +4,7 @@
 " relative to the location of this script.
 " Can also be given as an absolute path
 " by starting the first component with the system directory separator.
-let noderepl#poste_path = ['..', 'deps', 'node-replique', 'client']
+let noderepl#poste_path = ['..', 'deps', 'noderepl', 'client']
 
 " Holds connection details like port and server
 " which can be overridden by setting repl dictionary elements.
