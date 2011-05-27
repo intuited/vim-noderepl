@@ -1,9 +1,10 @@
 " Extends `repl#Repl` with node-specific functionality.
 
-" The path to the Python `poste.py` module,
+" Components of the path to the Python `poste.py` module,
 " relative to the location of this script.
-" Can also be given as an absolute path.
-let noderepl#poste_path = 'noderepl'
+" Can also be given as an absolute path
+" by starting the first component with the system directory separator.
+let noderepl#poste_path = ['..', 'deps', 'node-replique', 'client']
 
 " Holds connection details like port and server
 " which can be overridden by setting repl dictionary elements.
@@ -93,8 +94,8 @@ endfunction
 
 python <<EOF
 import vim, sys, os
-sys.path.insert(0, os.path.join(vim.eval("expand('<sfile>:p:h')"),
-                                vim.eval("noderepl#poste_path")))
+sys.path.insert(0, os.path.join(*[vim.eval("expand('<sfile>:p:h')")]
+                                + vim.eval("noderepl#poste_path")))
 import poste
 
 class NodeRepl(object):
