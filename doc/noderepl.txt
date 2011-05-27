@@ -6,6 +6,9 @@ in a Vim buffer.
 
 SETUP                 *noderepl-setup*
 
+You will need to have a python-enabled vim (|+python|)
+in order to use noderepl.
+
 Before you can use noderepl from within vim,
 you will have to start an instance of the server.
 
@@ -82,3 +85,15 @@ ISSUES                *noderepl-issues*
 Console output is not displayed in the vim REPL.
 
   Since the 
+
+
+PYTHON FOOTPRINT      *noderepl-python-footprint*
+
+noderepl is relatively clean in the way it uses Python.
+
+Other than importing the poste module,
+its only addition to vim's global Python namespace
+is a class called NodeRepl.
+
+NodeRepl contains glue code to facilitate the integration
+of the poste functionality into the vim addon.

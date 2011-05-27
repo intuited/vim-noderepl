@@ -105,7 +105,15 @@ class Repliques(object):
 
 
 def post(poste, host='localhost', port=4994, timeout=2):
-    """Posts `poste` and returns the response."""
+    """Posts `poste` and returns the response.
+
+    `poste` should be one of the classes defined in `Postes` --
+    subclasses of the `Poste` class.
+
+    The return value will be
+    an instance of one of the classes defined in `Repliques`.
+    These are all subclasses of `_Replique`.
+    """
     skt = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     skt.connect((host, port))
     skt.settimeout(timeout)
