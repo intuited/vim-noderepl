@@ -243,7 +243,8 @@ Server.prototype = {
    * Replies to a parsed request.
    * The top-level object contains
    * -   command: "evaluate", "complete", or "uniqueContext".
-   * -   context (optional): name of the evaluation context.  Created on demand.
+   * -   context (optional): name of the evaluation context or prefix.
+   *                         Contexts are created on demand (autovivified).
    * -   code: the string to be evaled or completed.
    */
   reply: function reply(request, stream) {
