@@ -1,0 +1,84 @@
+*noderepl.txt*  Vim interface to node.js REPL
+
+noderepl creates an interface to a node repl session
+in a Vim buffer.
+
+
+SETUP                 *noderepl-setup*
+
+Before you can use noderepl from within vim,
+you will have to start an instance of the server.
+
+This can be done by running the command >
+    node deps/noderepl/server/src/replique.js
+from wherever noderepl is installed.
+
+The Python client can be used to test whether or not the server is working: >
+    $ deps/noderepl/client/poste.py evaluate '["hello", "world"].join(" ")'
+    'hello world'
+
+
+VARIABLES             *noderepl-variables*
+
+g:noderepl_connect    *noderepl_connect*
+
+  Determines the parameters used to connect to the noderepl server.
+
+  By default this will use port 4994 on the local host,
+  with a timeout of 2 seconds.
+
+  This variable should be a Dictionary containing any or all of the keys
+  `host`, `port`, and `timeout`.
+
+
+COMMANDS              *noderepl-commands*
+
+NodeRepl [context_name]           *:NodeRepl*
+
+  Starts a new REPL in a new buffer.
+
+  If no context name is given, the default is used.
+
+
+NodeReplContext [context_name]    *:NodeReplContext*
+
+  If invoked from an existing REPL, switches the context.
+
+  Otherwise functions like |:NodeRepl|.
+
+
+CONCEPTS              *noderepl-concepts*
+
+Contexts              *noderepl-contexts*
+
+  A REPL session is bound to a given execution context.
+
+  That context determines the values of all top-level variables.
+
+  More than one REPL session can be bound to a given context,
+  and a session's context can be changed with |:NodeReplContext|.
+
+
+INTERFACE             *noderepl-interface*
+
+Keybindings for the REPL are based on those for the VimClojure addon.
+
+Specifically:
+
+  - CTRL-UP and CTRL-DOWN  move backwards and forwards in the history
+  - ENTER                  attempts to evaluate the current expression.
+                           If the text given constitutes a syntax error,
+                           the cursor is moved to the next line
+                           and entry continues.
+                           Pressing ENTER again will attempt to re-evaluate
+                           the entire text.
+
+The string "Node=>" is the REPL prompt.
+Deleting all or part of the prompt will confuse the REPL.  Don't do that.
+
+
+ISSUES                *noderepl-issues*
+
+Console output is not displayed in the vim REPL.
+
+  Since the 
