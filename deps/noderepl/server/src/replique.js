@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 // Snappy responses to requests for completion and evaluation.
 //
 // This module doesn't really do much other than organize existing code.
