@@ -1,0 +1,11 @@
+{
+  "name": "replique",
+  "version": "0.1.0",
+  "description": "REPL server for individual requests.",
+  "keywords": ["repl", "server"],
+  "author": { "name": "Ted Tibbetts", "url": "http://github.com/intuited" },
+  "files": ["README.md", "src/replique.js", "test/test-replique.js"],
+  "main": "src/replique.js",
+  "bin": { "replique": "src/replique.js" },
+  "devDependencies": { "nodeunit": "*" }
+}
