@@ -29,9 +29,7 @@ It is possible to use a different port by calling the API.
 For example, to run a server on port 1337:
 
     $ node
-    > new require('replique').Server(1337);
-
-The REPL will appear to hang.
+    > new (require('replique').Server)().listen(1337);
 
 Subsequently, console output (including, for now, debug logging messages)
 will be printed.
