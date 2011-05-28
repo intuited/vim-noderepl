@@ -4,8 +4,15 @@
 Library and command line client to facilitate communication
 with a `node`_ `replique`_ server.
 
+The replique server is distributed (along with ``poste_replique``)
+as part of the vim `noderepl`_ addon.
+
+``replique`` can also be installed separately with npm::
+    npm install replique
+
 .. _node: http://nodejs.org
-.. _replique: http://github.com/intuited/noderepl
+.. _replique: http://search.npmjs.org/#/replique
+.. _noderepl: http://github.com/intuited/noderepl
 
 
 CLI Usage
@@ -47,8 +54,6 @@ Communication with the server consists of calling the `post` function.
 See the source code or the docstrings for more information.
 
 An example of usage can be found in the vim addon `noderepl`_.
-
-.. _noderepl: http://github.com/intuited/noderepl
 
 
 Protocol
