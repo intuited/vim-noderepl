@@ -1,6 +1,6 @@
 {
   "name": "replique",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "REPL server for individual requests.",
   "keywords": ["repl", "server"],
   "author": { "name": "Ted Tibbetts", "url": "http://github.com/intuited" },
