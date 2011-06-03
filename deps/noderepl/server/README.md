@@ -13,6 +13,11 @@ REPLs on the same server instance without namespace conflicts.
 but functions as a general server, responding to JSON-formatted requests.
 For information on how to make requests, see the **Protocol** section.
 
+It can also be used in combination with the Python [`poste_replique`][] module.
+`poste_replique` provides a CLI and Python API for interaction with `replique`.
+
+Note that there is not yet a client written for node.
+
 
 Usage
 -----
@@ -95,5 +100,6 @@ as node's built-in REPL.
 See [node issue #807][] for details.
 
 
-[noderepl]: http://github.com/intuited/noderepl
+[`noderepl`]: http://github.com/intuited/noderepl
+[`poste_replique`]: http://pypi.python.org/pypi/poste_replique
 [node issue #807]: https://github.com/joyent/node/issues/807

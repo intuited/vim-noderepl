@@ -86,11 +86,11 @@ class Repliques(object):
         Repliques of this type usually indicate that the passed code was incomplete.
         """
         attribs = {'command': 'evaluate', 'result': 'syntaxError'}
-        display = 'message'
+        display = 'value'
 
     class Error(_Replique):
         attribs = {'command': 'evaluate', 'result': 'error'}
-        display = 'message'
+        display = 'value'
 
     class Completions(_Replique):
         attribs = {'command': 'complete'}

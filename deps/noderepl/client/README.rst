@@ -4,6 +4,9 @@
 Library and command line client to facilitate communication
 with a `node`_ `replique`_ server.
 
+``poste_replique`` can be used to do evaluation and completion
+of javascript code on a persistent node REPL.
+
 The replique server is distributed (along with ``poste_replique``)
 as part of the vim `noderepl`_ addon.
 
@@ -23,7 +26,7 @@ See the replique documentation for more info.
 
 To connect with the Python CLI::
 
-    $ poste.py evaluate '["hello", "world"].join(" ")'
+    $ poste_replique.py evaluate '["hello", "world"].join(" ")'
     'hello world'
 
 All evaluations take place in a persistent environment.
@@ -31,11 +34,11 @@ All evaluations take place in a persistent environment.
 It is possible to use a different persistent environment
 by specifying a context::
 
-    $ poste.py evaluate --context CLI-test 'var test = "testing"'
+    $ poste_replique.py evaluate --context CLI-test 'var test = "testing"'
     undefined
-    $ poste.py evaluate --context CLI-test 'test'
+    $ poste_replique.py evaluate --context CLI-test 'test'
     'testing'
-    $ poste.py evaluate 'test'
+    $ poste_replique.py evaluate 'test'
     undefined
 
 Not specifying a context is equivalent to specifying the context "default".

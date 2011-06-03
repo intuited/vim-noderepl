@@ -59,10 +59,6 @@ function Context() {
   // Add all the globals which existed at this module's initialization
   for (i in baseContext) newContext[i] = baseContext[i];
 
-  // Make the node-replique context available from within its REPLs.
-  newContext.nodeReplique = {};
-  for (i in global) newContext.nodeReplique[i] = global[i];
-
   newContext.module = module;
   newContext.require = require;
   newContext.global = newContext;
@@ -81,7 +77,7 @@ Context.prototype = {
 
     try {
       value = vm.runInContext(expression, this.context);
-      console.log('evaluate: runInContext returned value: ' + value);  //~~
+      console.log('evaluate: runInContext returned value: ' + util.inspect(value));  //~~
     } catch (error) {
       // repl.js says "instanceof doesn't work across context switches."
       if (error && error.constructor
@@ -269,6 +265,7 @@ Server.prototype = {
   evaluate: function (request) {
     var context = this.contexts.get(request.context);
     var result = context.evaluate(request.code);
+    console.log("Evaluation result: " + util.inspect(result));
     if (result instanceof results.Success) {
       result.value = this.formatValue(result.value);
     } else {

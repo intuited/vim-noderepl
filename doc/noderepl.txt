@@ -17,7 +17,7 @@ This can be done by running the command >
 from wherever noderepl is installed.
 
 The Python client can be used to test whether or not the server is working: >
-    $ deps/noderepl/client/poste.py evaluate '["hello", "world"].join(" ")'
+    $ deps/noderepl/client/poste_replique.py evaluate '["hello", "world"].join(" ")'
     'hello world'
 
 
@@ -99,12 +99,12 @@ PYTHON FOOTPRINT      *noderepl-python-footprint*
 
 noderepl is relatively clean in the way it uses Python.
 
-Other than importing the poste module,
+Other than importing the poste_replique module,
 its only addition to vim's global Python namespace
 is a class called NodeRepl.
 
 NodeRepl contains glue code to facilitate the integration
-of the poste functionality into the vim addon.
+of the poste_replique functionality into the vim addon.
 
 
 DEPENDENCIES          *noderepl-dependencies*

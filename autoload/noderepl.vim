@@ -96,7 +96,7 @@ python <<EOF
 import vim, sys, os
 sys.path.insert(0, os.path.join(*[vim.eval("expand('<sfile>:p:h')")]
                                 + vim.eval("noderepl#poste_path")))
-import poste
+import poste_replique as poste
 
 class NodeRepl(object):
     """Glue code to streamline calls to the Python `poste` module."""
