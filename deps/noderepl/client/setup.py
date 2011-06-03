@@ -20,7 +20,7 @@ def file_contents(filename):
 
 setup(
     name = "poste_replique",
-    version = "0.1.0",
+    version = "0.1.1",
     maintainer = "Ted Tibbetts",
     maintainer_email = "intuited@gmail.com",
     url = "http://github.com/intuited/poste_replique",
