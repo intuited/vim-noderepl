@@ -20,7 +20,7 @@ def file_contents(filename):
 
 setup(
     name = "poste_replique",
-    version = "0.1.1",
+    version = "0.1.5",
     maintainer = "Ted Tibbetts",
     maintainer_email = "intuited@gmail.com",
     url = "http://github.com/intuited/poste_replique",
@@ -28,7 +28,7 @@ setup(
         CLI and Python API for client-side communication
         with a persistent REPL server.
         """),
-    long_description = file_contents('README.rst'),
+    long_description = file_contents('README.txt'),
     classifiers = format_trove("""
         Development Status :: 4 - Beta
         Intended Audience :: Developers
